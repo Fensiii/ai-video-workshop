@@ -219,7 +219,7 @@ def hero(cv):
 def title(cv):
     sc.draw_logo(cv, 128, 140, 78, col([255, 255, 255]))
     ft = skia.Font(skia.Typeface('Noto Sans CJK SC Black'), 168); ft.setEdging(skia.Font.Edging.kAntiAlias)
-    txt = '特斯拉进化史'
+    txt = '会飞的车'
     x, y = 96, 360
     sh = P(Color=col([0, 0, 0], 0.8)); sh.setMaskFilter(skia.MaskFilter.MakeBlur(skia.kNormal_BlurStyle, 22))
     cv.drawString(txt, x + 6, y + 10, ft, sh)

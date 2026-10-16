@@ -1,12 +1,6 @@
 ---
 name: tiktok-video
-description: >
-  Generate complete TikTok / Douyin(抖音) / YouTube Shorts / Reels short videos
-  from a one-line brief, end to end: script writing, free stock footage & image
-  download, TTS voiceover (Chinese & English), word-level karaoke captions,
-  background music, and ffmpeg composition into a finished 1080x1920 MP4.
-  Use when the user asks to create, make, or generate a short video
-  (短视频/抖音视频/TikTok video) on any topic.
+description: "一句话主题→完整竖屏短视频（脚本、素材、TTS 配音、逐字字幕、配乐、ffmpeg 合成）。"
 ---
 
 # TikTok / Douyin Short Video Generator

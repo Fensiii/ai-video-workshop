@@ -1,6 +1,6 @@
 ---
 name: lingzao
-description: Use Lingzao creator-content tools for Xiaohongshu/XHS, Douyin, and WeChat official-account public content. Lingzao supports XHS SEO, Xiaohongshu account analysis, benchmark account discovery, viral note breakdown, keyword research, one-stop content packages from keyword/link/image/inspiration material, title and cover optimization, hand-drawn route-map cards, city food maps, travel itinerary maps, life checklist maps, workflow manual maps, creator content workflow, note search, creator search, profile lookup, recent posts, deep profile copy/subtitle analysis, note/article detail, post comments, article stats, related articles, short-video copy extraction, and prompt-based creator image generation.
+description: "小红书运营入口：关键词、标题、封面、笔记拆解、对标账号、账号诊断、发布前后检查。"
 ---
 
 # Lingzao

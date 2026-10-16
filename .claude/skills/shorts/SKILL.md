@@ -1,13 +1,6 @@
 ---
 name: shorts
-description: >
-  Interactive longform-to-shortform video creator. Extracts viral-ready short clips
-  from long videos using Claude as the orchestrator. Transcribes with faster-whisper
-  (GPU), Claude scores and presents candidate segments interactively, user picks and
-  adjusts, Remotion renders premium animated captions (Bold/Bounce/Clean styles),
-  FFmpeg exports platform-optimized files (YouTube Shorts, TikTok, Instagram Reels).
-  Use when user says "shorts", "short clips", "shortform", "extract clips",
-  "tiktok from video", "reels from video", "vertical clips", or "create shorts".
+description: "长视频→多条竖屏短视频：转写、挑片段、动画字幕、按平台导出。"
 allowed-tools:
   - Bash
   - Read
@@ -30,7 +23,7 @@ Before starting, locate the project root:
 ```bash
 # Try common locations in priority order
 SHORTS_ROOT=""
-for dir in "$HOME/.claude/skills/shorts" "$HOME/.claude/skills/claude-shorts" "$HOME/claude-shorts" "$(pwd)"; do
+for dir in "$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/skills/shorts" "$HOME/.claude/skills/shorts" "$HOME/.claude/skills/claude-shorts" "$HOME/claude-shorts" "$(pwd)"; do
     if [ -f "$dir/SKILL.md" ]; then
         SHORTS_ROOT="$dir"
         break

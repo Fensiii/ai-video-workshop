@@ -1,14 +1,6 @@
 ---
 name: hyperframes
-description: >
-  Entry point for HyperFrames (HTML/CSS/GSAP) videos: use when the user asks for HyperFrames, an
-  HTML-based composition, a Remotion-to-HyperFrames port, or a workflow only HyperFrames offers
-  (pr-to-video, figma import, embedded captions, slideshow deck). In this workspace Remotion is the
-  default framework for generic video requests; see CLAUDE.md. Also
-  use it to inspect, diagnose, validate, preview, publish, or batch-render an existing HyperFrames
-  project. Inputs may be a website URL, GitHub PR, Figma design or URL, text or brief, existing
-  footage, or music. It resumes project state, captures intent when applicable, selects and installs
-  the owning workflow, and routes domain capabilities.
+description: "仅在用户点名 HyperFrames/HTML 合成，或要 PR 转视频、Figma 导入、抠像字幕、可交互幻灯片时使用。"
 ---
 
 **Plugin installs:** Before setup or freshness commands, follow [plugin execution rules](references/plugin-installation.md) when this skill is inside a HyperFrames plugin. Standalone installs keep the update instructions below.
@@ -130,7 +122,7 @@ For copyable edit contracts, load `/hyperframes-core` → `references/creator-ed
 Broad feedback about how photographic media looks or behaves also routes to
 `/media-use`, even when the user never says “color grading” or “effect”: fix
 dark/flat/boring footage, stylize a clip, hide a face, or improve a media
-reveal. Read `../media-use/references/media-treatments.md` before editing a
+reveal. Read `.claude/skill-library/media-use/references/media-treatments.md` before editing a
 treatment; it governs how footage is treated, never whether media may be used.
 Do not substitute a generic LUT, CSS filter/overlay, or opacity tween for an
 existing canonical treatment primitive. Keep text/layout/motion-only edits in

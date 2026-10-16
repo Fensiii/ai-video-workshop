@@ -1,11 +1,6 @@
 ---
 name: douyin
-description: |
-  抖音视频解析、博主视频抓取/转录/运营分析/写入飞书。
-  触发词：解析抖音、抖音视频、抓取视频、博主视频、创作者视频、douyin、抖音解析、飞书多维表格
-  子命令：
-    douyin:fetch - 抓取博主最新视频 → 本地转录 → AI运营分析 → 直写飞书多维表格
-    douyin:parse - 解析单个抖音短视频（链接/分享文本 → 元数据 + 转录）
+description: "抖音视频解析、博主视频抓取/转录/运营分析（需用户自己的 Cookie）。"
 ---
 
 # 抖音解析 & 飞书写入 Skill
@@ -125,7 +120,7 @@ description: |
 每次执行前确认虚拟环境：
 
 ```bash
-SKILL_DIR="/Users/apple/.claude/skills/douyin"
+SKILL_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/skills/douyin"
 PYTHON="$SKILL_DIR/.venv/bin/python"
 CLI="$SKILL_DIR/scripts/cli.py"
 
@@ -560,7 +555,7 @@ fetch 命令完成后，**必须**由 Claude 分批执行 AI 运营分析。每�
 ### 查询待分析记录
 
 ```bash
-SKILL_DIR="/Users/apple/.claude/skills/douyin"
+SKILL_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/skills/douyin"
 PYTHON="$SKILL_DIR/.venv/bin/python"
 
 $PYTHON << 'PYEOF'
@@ -669,7 +664,7 @@ PYEOF
 ### 更新飞书记录
 
 ```bash
-SKILL_DIR="/Users/apple/.claude/skills/douyin"
+SKILL_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.claude/skills/douyin"
 PYTHON="$SKILL_DIR/.venv/bin/python"
 
 $PYTHON << 'PYEOF'

@@ -1,6 +1,6 @@
 ---
 name: editing
-description: Entry point for every video job - routes to video-studio-setup, insta-audit, studio-script, short-editing, broll, steal, clips, short-translate, codex-images, vox or publish, and continues the project already in progress. Use when the user says /editing, edit, montage, take, short, reel, video, script, audit, publish, or is not sure which video skill to use.
+description: "自己拍的口播素材剪辑入口：剪短视频/长视频、B-roll、仿风格、配音翻译、发布。"
 argument-hint: "[take | url | slug | path] [brief]"
 ---
 

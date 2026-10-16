@@ -1,6 +1,6 @@
 ---
 name: remotion-best-practices
-description: Router for all Remotion skills
+description: "Remotion 开发入口：新建、预览、渲染、字幕、地图、动效、升级。生成视频的默认框架。"
 version: 4.0.536
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: self-media-content-workflow
-description: 通用自媒体内容生产与经营工作流。用于自媒体内容创作、选题策划、热点或竞品研究、多平台改写、短视频脚本、数字人视频、动画解说视频、YouTube 与抖音视频号小红书多平台视频发布、发布包、公众号草稿、内容数据分析、周复盘、月复盘和继续未完成任务。负责识别请求类型，调用创作简报、内容策略、热点竞品、平台文案、短视频与视频制片、视频发布、数据复盘和交付归档模块，并管理方向确认、标题确认、终稿确认和发布授权。
+description: "自媒体内容全流程入口：简报、策略、热点竞品、多平台文案、短视频、发布、数据复盘。"
 ---
 
 # 自媒体内容工作流
@@ -169,7 +169,7 @@ description: 通用自媒体内容生产与经营工作流。用于自媒体内�
 - 发布和复盘：[publishing-and-review.md](references/publishing-and-review.md)
 - 风格学习：[style-learning.md](references/style-learning.md)
 - 数字人视频制作：[digital-human-production.md](references/digital-human-production.md)
-- 动画解说制片：[animated-explainer-production.md](../self-media-short-video/references/animated-explainer-production.md)
-- 视频多平台版本：[video-platform-versions.md](../self-media-short-video/references/video-platform-versions.md)
+- 动画解说制片：[animated-explainer-production.md](.claude/skill-library/self-media-short-video/references/animated-explainer-production.md)
+- 视频多平台版本：[video-platform-versions.md](.claude/skill-library/self-media-short-video/references/video-platform-versions.md)
 - 任务卡：[content-task-template.md](assets/content-task-template.md)
 - 内容注册表：[content-registry-template.md](assets/content-registry-template.md)

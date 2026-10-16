@@ -1,11 +1,6 @@
 ---
 name: lianyun-video
-description: >
-  【从这里开始】用 AI Agent + Remotion(写代码渲染视频)做中文知识讲解类短视频——
-  炼云讲堂白板教学风、slide 驱动、16:9 横屏。入口 skill:把「选题 → 脚本 → 设计 →
-  搭建」四步工作流映射到各领域 skill,并让 Agent 自己安装 Remotion。做讲解视频先读它。
-  本版本不含配音 / 字幕 / 自动发布。触发:「做一条讲解视频」「lianyun 视频」。
-  (Entry skill: make Chinese knowledge-explainer videos with Remotion.)
+description: "中文知识讲解视频（白板教学风、16:9、Remotion）入口：选题→脚本→设计→搭建。"
 metadata: { "tags": "read-first, video, remotion, explainer, chinese, router, lianyun" }
 ---
 

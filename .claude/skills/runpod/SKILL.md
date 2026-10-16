@@ -15,11 +15,11 @@ Run open-source AI models on cloud GPUs via RunPod serverless. Pay-per-second, n
 echo "RUNPOD_API_KEY=your_key_here" >> .env
 
 # 3. Deploy any tool with --setup
-uv run tools/image_edit.py --setup
-uv run tools/upscale.py --setup
-uv run tools/dewatermark.py --setup
-uv run tools/sadtalker.py --setup
-uv run tools/qwen3_tts.py --setup
+uv run .claude/video-toolkit/tools/image_edit.py --setup
+uv run .claude/video-toolkit/tools/upscale.py --setup
+uv run .claude/video-toolkit/tools/dewatermark.py --setup
+uv run .claude/video-toolkit/tools/sadtalker.py --setup
+uv run .claude/video-toolkit/tools/qwen3_tts.py --setup
 ```
 
 Each `--setup` command:
@@ -213,11 +213,11 @@ You've hit your plan's concurrent worker limit. Either:
 
 ## Docker Images
 
-All Dockerfiles live in `docker/runpod-*/`. Images use `runpod/pytorch` as the base to share layers across tools.
+All Dockerfiles live in `.claude/video-toolkit/docker/runpod-*/`. Images use `runpod/pytorch` as the base to share layers across tools.
 
 Building for RunPod (from Apple Silicon Mac):
 ```bash
-docker buildx build --platform linux/amd64 -t ghcr.io/conalmullan/video-toolkit-<name>:latest docker/runpod-<name>/
+docker buildx build --platform linux/amd64 -t ghcr.io/conalmullan/video-toolkit-<name>:latest .claude/video-toolkit/docker/runpod-<name>/
 docker push ghcr.io/conalmullan/video-toolkit-<name>:latest
 ```
 

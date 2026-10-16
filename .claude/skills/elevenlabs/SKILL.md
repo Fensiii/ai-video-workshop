@@ -58,7 +58,7 @@ audio = client.text_to_dialogue.convert(
 save(audio, "voiceover.mp3")
 ```
 
-- `uv run tools/voiceover.py --model eleven_v4 ...` (and `redub.py --model eleven_v4`) do this for you, warn once that `--style`/`--speed` are ignored, and split text over ~2,000 chars per request (the reliable dialogue limit) at sentence boundaries. Pace with `--max-wpm` instead of `--speed`.
+- `uv run .claude/video-toolkit/tools/voiceover.py --model eleven_v4 ...` (and `redub.py --model eleven_v4`) do this for you, warn once that `--style`/`--speed` are ignored, and split text over ~2,000 chars per request (the reliable dialogue limit) at sentence boundaries. Pace with `--max-wpm` instead of `--speed`.
 - `client.text_to_dialogue.convert_with_timestamps(...)` returns the same character alignment as TTS `convert_with_timestamps`, so `redub.py --sync` works with v4 and sends the same stability + similarity.
 - Pass `settings` as a dict: SDK versions before 2.69 type it with a stability-only model. The API reads `similarity` there since 2026-09-28 (it rejects an out-of-range value with a 422). Text to Dialogue needs `elevenlabs>=2.21`.
 - Direct delivery with audio tags (`[whispering]`, `[warm]`, `[sigh]`) and punctuation. Write tags that clearly describe the voice, because v4 can also read a tag as a sound effect.
@@ -193,7 +193,7 @@ Use the toolkit's voiceover tool to generate audio for each scene:
 
 ```bash
 # Generate voiceover files for each scene
-uv run tools/voiceover.py --scene-dir public/audio/scenes --json
+uv run .claude/video-toolkit/tools/voiceover.py --scene-dir public/audio/scenes --json
 
 # Output:
 # public/audio/scenes/

@@ -237,9 +237,9 @@ final_audio = CompositeAudioClip([music] + vo)
 
 | Task | Tool |
 |------|------|
-| Animate a still image | `tools/ltx2.py --input` |
-| Talking head from photoreal portrait | `tools/sadtalker.py` |
-| Talking head from stylized character | `tools/ltx2.py --input` (see ltx2 skill) |
+| Animate a still image | `.claude/video-toolkit/tools/ltx2.py --input` |
+| Talking head from photoreal portrait | `.claude/video-toolkit/tools/sadtalker.py` |
+| Talking head from stylized character | `.claude/video-toolkit/tools/ltx2.py --input` (see ltx2 skill) |
 | **Add a label/caption/lower third to either of the above** | **moviepy + PIL (this skill)** |
 | Convert / compress / resize an existing file | `ffmpeg` (see ffmpeg skill) |
 | Long-form, design-system-driven video | Remotion (see remotion skill) |

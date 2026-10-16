@@ -32,7 +32,7 @@ Reach for Ideogram 4 (over FLUX.2) when the image needs:
 
 Use **FLUX.2** instead when: the image has no critical text, you need commercial-licensed output,
 or you just want a fast atmospheric background. FLUX takes plain natural-language prompts; Ideogram
-wants JSON. See `tools/flux2.py`.
+wants JSON. See `.claude/video-toolkit/tools/flux2.py`.
 
 ## The One Thing to Get Right
 
@@ -50,7 +50,7 @@ Minimal valid caption:
 Full schema, strict key-ordering rules, and the bbox coordinate system are in **`prompting.md`**.
 Worked title-card / thumbnail / quote-card examples are in **`examples.md`**.
 
-## Quick Reference — `tools/ideogram4.py`
+## Quick Reference — `.claude/video-toolkit/tools/ideogram4.py`
 
 > Thin wrapper over Ideogram's hosted v4 API. Needs `IDEOGRAM_API_KEY` in `.env`
 > (key from developer.ideogram.ai). `--json` posts the caption as the API's `json_prompt`
@@ -58,19 +58,19 @@ Worked title-card / thumbnail / quote-card examples are in **`examples.md`**.
 
 ```bash
 # Hand-authored JSON caption (the recommended path for text/layout) — Claude writes caption.json
-uv run tools/ideogram4.py --json caption.json --output title.png
+uv run .claude/video-toolkit/tools/ideogram4.py --json caption.json --output title.png
 
 # Caption from stdin (Claude can pipe it directly)
-cat caption.json | uv run tools/ideogram4.py --json - --output title.png
+cat caption.json | uv run .claude/video-toolkit/tools/ideogram4.py --json - --output title.png
 
 # Plain prompt — Ideogram's server-side magic prompt expands it (weaker; prefer --json)
-uv run tools/ideogram4.py --prompt "Title card: 'AI ENGINEERING REVIEW' bold white on dark" --output title.png
+uv run .claude/video-toolkit/tools/ideogram4.py --prompt "Title card: 'AI ENGINEERING REVIEW' bold white on dark" --output title.png
 
 # Inject brand hex colors into the caption's palette (JSON mode)
-uv run tools/ideogram4.py --json caption.json --brand digital-samba --output cta.png
+uv run .claude/video-toolkit/tools/ideogram4.py --json caption.json --brand digital-samba --output cta.png
 
 # Quality tier + resolution
-uv run tools/ideogram4.py --json caption.json --speed QUALITY --resolution 2048x2048 --output slide.png
+uv run .claude/video-toolkit/tools/ideogram4.py --json caption.json --speed QUALITY --resolution 2048x2048 --output slide.png
 ```
 
 ## Ideogram 4.5 (opt-in)
@@ -82,7 +82,7 @@ send a JSON caption to 4.5. Ideogram 4 stays the default because 4.5 sizes must 
 of 32, which rules out exact YouTube 1280x720 (`/thumbnail` uses 4.0 for that).
 
 ```bash
-uv run tools/ideogram4.py --model 4.5 --json caption.json --speed QUALITY --resolution 1440x2560 --output card.png
+uv run .claude/video-toolkit/tools/ideogram4.py --model 4.5 --json caption.json --speed QUALITY --resolution 1440x2560 --output card.png
 ```
 
 - **Prompt:** both modes go in 4.5's single `prompt` field. `--json` sends the caption as
@@ -127,4 +127,4 @@ LTX-2 fail (both render garbled text). Natural pairings:
 | Quote card / stat card | Multi-line text + layout control via bboxes |
 | Signage/logos inside a product-demo scene | In-image text other models can't render |
 
-Then feed the still into Remotion (`<OffthreadVideo>`/`Img`) or animate it with `tools/ltx2.py --input`.
+Then feed the still into Remotion (`<OffthreadVideo>`/`Img`) or animate it with `.claude/video-toolkit/tools/ltx2.py --input`.

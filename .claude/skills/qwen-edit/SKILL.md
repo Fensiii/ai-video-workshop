@@ -5,7 +5,7 @@ description: AI image editing prompting patterns for Qwen-Image (Qwen-Image-Edit
 
 # Qwen-Image-Edit Skill
 
-AI-powered image editing via `tools/image_edit.py`. The model depends on the deployment:
+AI-powered image editing via `.claude/video-toolkit/tools/image_edit.py`. The model depends on the deployment:
 
 | Deployment | Model | License | Defaults | Max inputs |
 |-----------|-------|---------|----------|------------|
@@ -15,7 +15,7 @@ AI-powered image editing via `tools/image_edit.py`. The model depends on the dep
 
 The tool prints `Model:` and `Steps:` after each edit, so you can tell which model the Modal app
 runs and how many steps it took. Without `--steps`, each model runs its own default above.
-Opt in with `IMAGE_EDIT_MODEL=qwen-image-2.1 uv run modal deploy docker/modal-image-edit/app.py`;
+Opt in with `IMAGE_EDIT_MODEL=qwen-image-2.1 uv run modal deploy .claude/video-toolkit/docker/modal-image-edit/app.py`;
 deploy again without it to switch back.
 
 **Status:** Evolving - learnings being captured as we experiment. The prompt
@@ -68,33 +68,33 @@ Use when the user wants to:
 
 ```bash
 # Basic edit
-uv run tools/image_edit.py --input photo.jpg --prompt "Add sunglasses"
+uv run .claude/video-toolkit/tools/image_edit.py --input photo.jpg --prompt "Add sunglasses"
 
 # With negative prompt (recommended)
-uv run tools/image_edit.py --input photo.jpg \
+uv run .claude/video-toolkit/tools/image_edit.py --input photo.jpg \
   --prompt "Reframe as portrait with full head visible" \
   --negative "blur, distortion, artifacts"
 
 # Style transfer
-uv run tools/image_edit.py --input photo.jpg --style cyberpunk
+uv run .claude/video-toolkit/tools/image_edit.py --input photo.jpg --style cyberpunk
 
 # Background (use cautiously - often fails)
-uv run tools/image_edit.py --input photo.jpg --background office
+uv run .claude/video-toolkit/tools/image_edit.py --input photo.jpg --background office
 
 # Higher quality (RunPod / 2511 -- on Modal / 2.1 the 40-step default already is)
-uv run tools/image_edit.py --input photo.jpg --prompt "..." --steps 16 --guidance 3.0 --cloud runpod
+uv run .claude/video-toolkit/tools/image_edit.py --input photo.jpg --prompt "..." --steps 16 --guidance 3.0 --cloud runpod
 
 # Extract the subject onto a transparent background (Modal / 2.1)
-uv run tools/image_edit.py --input product.jpg   --prompt "This is an RGBA image with transparency. The product from the photo. The image has alpha channel and the background is transparent."   --output product_cutout.png
+uv run .claude/video-toolkit/tools/image_edit.py --input product.jpg   --prompt "This is an RGBA image with transparency. The product from the photo. The image has alpha channel and the background is transparent."   --output product_cutout.png
 
 # Multi-image composite (identity-preserving) -- settings tuned on RunPod / 2511
-uv run tools/image_edit.py --input person.jpg background.jpg \
+uv run .claude/video-toolkit/tools/image_edit.py --input person.jpg background.jpg \
   --prompt "The [ethnicity] [gender] with [hair description] from first image is now in [scene] from second image. Same [features], [outfit]." \
   --negative "different ethnicity, different hair color, different face shape, generic stock photo" \
   --steps 16 --guidance 2.0 --cloud runpod
 
 # Multi-image composite on Modal / 2.1 -- up to 10 references, defaults usually suffice
-uv run tools/image_edit.py --input person.jpg outfit.jpg shoes.jpg background.jpg \
+uv run .claude/video-toolkit/tools/image_edit.py --input person.jpg outfit.jpg shoes.jpg background.jpg \
   --prompt "The person from image 1 wearing the outfit from image 2 and the shoes from image 3, standing in the scene from image 4. Same face and hair."
 ```
 
@@ -106,8 +106,8 @@ uv run tools/image_edit.py --input person.jpg outfit.jpg shoes.jpg background.jp
 
 ## Tool Location
 
-`tools/image_edit.py` - CLI wrapper for the Modal (`docker/modal-image-edit/`) and RunPod
-(`docker/runpod-qwen-edit/`) endpoints
+`.claude/video-toolkit/tools/image_edit.py` - CLI wrapper for the Modal (`.claude/video-toolkit/docker/modal-image-edit/`) and RunPod
+(`.claude/video-toolkit/docker/runpod-qwen-edit/`) endpoints
 
 ## Related Docs
 

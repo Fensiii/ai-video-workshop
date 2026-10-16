@@ -1,4 +1,4 @@
-# 视频 / 自媒体工作区
+# ai-video-workshop
 
 只有 11 个入口 skill 自动加载（`.claude/skills/`）。另外 119 个放在 `.claude/skill-library/<名字>/SKILL.md`，不占上下文：
 - 入口 skill 或用户提到下面某个名字时，用 Read 读那个文件再照做；Skill 工具调用不到它们。

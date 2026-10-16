@@ -51,7 +51,7 @@ Frame-check real footage for unwanted text the same way you would a generated fr
 
 **Never regenerate an existing clip.** Cache by scene and layer id under the project directory. Re-fetching to "make sure it's fresh" costs money and can come back a few frames different, which shifts every cut after it.
 
-Provider-specific failure modes — duration limits that are silently rejected, errors delivered inside HTTP 200, endpoints that rot, billing gates that look like rate limits — are in `references/provider-landmines.md`. Read it before quoting a cost or planning a batch. Costs and rights per provider live in the `studio-setup` skill's `SERVICES.md`; check it before anything is published.
+Provider-specific failure modes — duration limits that are silently rejected, errors delivered inside HTTP 200, endpoints that rot, billing gates that look like rate limits — are in `references/provider-landmines.md`. Read it before quoting a cost or planning a batch. Costs and rights per provider live in `.claude/vendor/social-skills/skills/studio-setup/SERVICES.md`; check it before anything is published.
 
 ## Anti-patterns
 

@@ -37,7 +37,7 @@ This is the one category where the quality leader is the wrong answer, and the c
 - **MiniMax music is free, unbilled, and its redistribution rights are unclear** — the training data is undisclosed and the terms do not clearly grant redistribution of generated output. Fine for internal and demo work, never under client work, and it should be reachable only by name rather than by an auto-pick.
 - **The best-sounding options are the ones to avoid.** Unresolved training-data litigation, and mostly no public API to automate against anyway.
 
-Costs and licence terms per service are tabulated in the `studio-setup` skill's `SERVICES.md` — read the rights column, not the price column, before publishing.
+Costs and licence terms per service are tabulated in `.claude/vendor/social-skills/skills/studio-setup/SERVICES.md` — read the rights column, not the price column, before publishing.
 
 **For a music-led format the score is the FIRST question of the interview, not the last.** Scene durations are cut to the track's energy envelope, so choosing it late means re-timing every scene. Get the track, map it, then set durations.
 

@@ -19,7 +19,7 @@ The rest of the sequence needs `pip install 'video-studio-engine @ https://githu
 
 | # | Step | Owned by |
 |---|---|---|
-| 0 | Check the machine; offer to fix it; **ask before installing** | `studio-setup` |
+| 0 | Check the machine; offer to fix it; **ask before installing** | `.claude/vendor/social-skills/skills/studio-setup/SKILL.md` (read directly) |
 | 1 | Enumerate `formats/*.md`, present as a choice, load only the chosen one | `video-formats` |
 | 2 | Run that format's interview, ≤4 questions a round | `agent-interview` |
 | 3 | Elicit sourcing — **footage and audio in the same round** | `media-acquisition`, `audio-acquisition` |

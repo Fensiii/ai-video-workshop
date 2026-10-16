@@ -1,9 +1,15 @@
 # 视频制作工作区
 
-`.claude/skills/` 下装了 97 个视频相关 skills。按任务选入口：
+`.claude/skills/` 下装了 139 个视频 / 自媒体相关 skills。按任务选入口：
 
 | 任务 | 首选 skill |
 |---|---|
+| 自媒体内容全流程（选题→策略→文案→短视频→发布→复盘） | `self-media-content-workflow`（路由到 `self-media-*`） |
+| 小红书运营（关键词、标题、封面、笔记拆解、账号诊断、发布前后检查） | `lingzao`（路由到 `xhs-*`、`benchmark-copy-rewrite`、`handdrawn-route-map-card`） |
+| 抖音视频解析 / 拆解（需要自己的 Cookie） | `douyin` |
+| TikTok 视频制作 | `tiktok-video` |
+| 连云风格视频（内容、设计、核心模板） | `lianyun-video`（路由到 `lianyun-video-*`） |
+| 各平台视频 / 文章转写入库（B站、抖音、YouTube、播客、小红书、公众号、知乎、微博、X） | `*-transcribe`、`*-ingest`，整理用 `content-enrich`、`knowledge-base-management`、`learning-notes-automation`、`industry-intelligence-radar` |
 | 不确定用哪个 / 短视频剪辑全流程（法语作者，按用户语言回复） | `editing`（路由到 `video-studio-setup`、`short-editing`、`broll`、`clips`、`vox`、`publish` 等） |
 | 用 HTML/CSS 做视频（HeyGen HyperFrames） | `hyperframes`（路由到 `hyperframes-*`、`general-video`、`product-launch-video`、`faceless-explainer`、`slideshow` 等） |
 | 社媒内容策略、选题、钩子、配乐卡点 | `social-skills--video-production`（及其余 `social-skills--*`） |
@@ -45,6 +51,8 @@ cp .env.example .env                     # 填 API key（.env 已被 gitignore�
 
 `social-skills--*` 依赖原仓库的 `src/`、`composer/` 等，完整仓库放在 `.claude/vendor/social-skills/`，skills 以符号链接接入（与其 `install.sh` 一致）。依赖：`cd .claude/vendor/social-skills && uv sync`。
 
+同样方式接入的还有 `lingzao`（含 `xhs-*` 等子 skill，`.claude/vendor/lingzao-skill/`）和 chubbyskills 的转写 / 入库 skill（`.claude/vendor/chubbyskills/`，依赖 `uv sync`，配置参考 `chubby.example.yaml`）。`douyin` 首次使用跑 `scripts/setup_venv.sh`，Cookie 存在 skill 目录下的 `cookie_data/`（已被 gitignore）。
+
 ## 许可证
 
-`video-talkcraft` 为 PolyForm Noncommercial（仅限非商业使用）；其余为 MIT / Apache-2.0 / Remotion License（HyperFrames 为 Apache-2.0）。
+`video-talkcraft`（PolyForm Noncommercial）和 `lianyun-video-*`（CC BY-NC 4.0）仅限非商业使用；`douyin` 原仓库未声明许可证；其余为 MIT / Apache-2.0 / Remotion License（HyperFrames 为 Apache-2.0）。

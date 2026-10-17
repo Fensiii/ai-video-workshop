@@ -587,6 +587,9 @@ def draw_grid(c, cam, t, alpha=1.0, labels=True, hl=None):
         if is_hl and hl[1] > 0:
             c.drawLine(float(x0), float(y0), float(x1), float(y1), P((240, 240, 250), 0.55 * hl[1], stroke=1.6))
         if labels and a > 0.02:
+            sx_, sy_ = map_pt(*cam.rot_pt(lab_x, yv - 8))
+            a *= keepout(sx_, sy_)
+        if labels and a > 0.02:
             draw_text(c, B.fmt_level(v), lab_x, yv - 8, font('med', 15), P((147, 151, 169), 0.85 * a), spacing=0.8, align='center')
 
 
@@ -711,6 +714,8 @@ def draw_event_fx(c, cam, t, ending=0.0):
             la = label_a * (1 - ending / 0.6) * 0.85
             wl = text_width(font('sans_b', 13), ev.label, 0.6) / 2
             la *= smooth((x - wl - 4) / 40.0) * smooth((W - x - wl - 4) / 40.0)
+            sx_, sy_ = map_pt(*cam.rot_pt(x, top - 10))
+            la *= keepout(sx_, sy_)
             draw_text(c, ev.label, x, top - 10, font('sans_b', 13), P(mix(rgb, (255, 255, 255), 0.15), la), spacing=0.6, align='center')
         # flash
         if a < 0.8:
@@ -718,7 +723,10 @@ def draw_event_fx(c, cam, t, ending=0.0):
             radial(c, x, y, 40 + 170 * ease_out(e), light, 0.9 * (1 - e) ** 2)
             hstreak(c, x, y, 380 * (0.4 + 0.6 * ease_out(e)), 2.0, light, 0.8 * (1 - e))
         # ring
-        ra = env(a, 0.0, 0.25, 3.3, 0.9)
+        rlife = 3.3
+        if i + 1 < len(EVENTS):
+            rlife = min(rlife, max(EVENTS[i + 1].t - ev.t + 0.25, 1.6))
+        ra = env(a, 0.0, 0.25, rlife, 0.5)
         if ra > 0 and ending <= 0:
             r = 88 * (0.55 + 0.45 * ease_out(a / 0.35))
             c.drawCircle(x, y, r, P(rgb, 0.55 * ra, stroke=1.5))
@@ -751,6 +759,9 @@ def draw_milestones(c, cam, t, alpha=1.0):
         lab_end = 4.6
         if mi + 1 < len(ms):
             lab_end = min(lab_end, ms[mi + 1][2] - tm + 0.1)
+        nxt = [ev.t for ev in EVENTS if ev.t > tm + 0.3]
+        if nxt:
+            lab_end = min(lab_end, max(nxt[0] - tm + 0.15, 1.2))
         if a < -0.05 or a > 5.0:
             continue
         x, y, sc = cam.proj(fd, math.log10(lv))
@@ -792,6 +803,238 @@ def grid_highlight(t):
         if e > 0:
             return (lv, e)
     return None
+
+
+# ----------------------------------------------------------------------------
+# camera FX: push-in on key moments, shake on black swans and violent swings
+# ----------------------------------------------------------------------------
+CUR_M = skia.Matrix()   # world -> screen transform of the current frame
+CUR_T = 0.0
+CUR_HOFF = (0.0, 0.0)   # small share of the shake applied to the HUD
+FOCUS = (1015.0, 560.0)
+
+
+def zoom_env(a):
+    if a < -0.55 or a > 2.9:
+        return 0.0
+    if a < 0.3:
+        return ease_io((a + 0.55) / 0.85)
+    if a < 1.75:
+        return 1.0
+    return 1.0 - ease_io((a - 1.75) / 1.15)
+
+
+def _wave(t, freqs, seed):
+    out = 0.0
+    for k, f in enumerate(freqs):
+        ph = (seed * 2.399 + k * 1.618) % (2 * math.pi)
+        out += math.sin(2 * math.pi * f * t + ph) / (k + 1) ** 0.5
+    return out / 1.9
+
+
+def shake_impulse(t):
+    amp = 0.0
+    for ev in EVENTS:
+        a = t - ev.t
+        if ev.shake > 0 and 0 <= a < 3.0:
+            amp += ev.shake * math.exp(-a / 0.5) * smooth(a / 0.025)
+    for lv, fd, tm in B.MILESTONE_T:
+        a = t - tm
+        if 0 <= a < 2.0:
+            amp += 5.0 * math.exp(-a / 0.35) * smooth(a / 0.025)
+    return amp
+
+
+def camera_fx(fi, t, cam):
+    """world matrix, background matrix, HUD offset, shake impulse, zoom"""
+    srcs = []
+    if 8.5 <= t <= 179.5:
+        for ev in EVENTS:
+            if ev.zoom > 0:
+                e = zoom_env(t - ev.t)
+                if e > 0:
+                    x, y, _ = event_point(cam, ev)
+                    srcs.append((ev.zoom * e, e, cam.rot_pt(x, y)))
+        for lv, fd, tm in B.MILESTONE_T:
+            e = zoom_env(t - tm)
+            if e > 0:
+                x, y, _ = cam.proj(fd, math.log10(lv))
+                srcs.append((0.26 * e, e, cam.rot_pt(float(x), float(y))))
+    wsum = sum(w for w, _, _ in srcs)
+    if wsum > 0:
+        ax = sum(w * p[0] for w, _, p in srcs) / wsum
+        ay = sum(w * p[1] for w, _, p in srcs) / wsum
+        S = 1.0 + max(w for w, _, _ in srcs)
+        sf = 0.8 * max(e for _, e, _ in srcs)
+        afx = ax + (FOCUS[0] - ax) * sf
+        afy = ay + (FOCUS[1] - ay) * sf
+    else:
+        S, ax, ay, afx, afy = 1.0, 960.0, 540.0, 960.0, 540.0
+    imp = shake_impulse(t)
+    vol = float(CAM['volshake'][fi]) if t < 179.0 else 0.0
+    dx = imp * _wave(t, (7.3, 11.9, 16.1), 1) + vol * _wave(t, (3.1, 5.3, 7.9), 2)
+    dy = imp * _wave(t, (8.9, 13.1, 15.3), 3) + vol * _wave(t, (2.7, 4.9, 8.3), 4)
+    rot = 0.022 * imp * _wave(t, (6.1, 10.7, 14.3), 5) + 0.05 * vol * _wave(t, (1.9, 3.7), 6)
+    os_ = 1.0 + (imp + vol) * 2.6 / 1080.0
+    m = skia.Matrix()
+    m.setTranslate(-ax, -ay)
+    m.postScale(S, S)
+    m.postTranslate(afx, afy)
+    m.postScale(os_, os_, 960, 540)
+    m.postRotate(rot, 960, 540)
+    m.postTranslate(dx, dy)
+    mb = skia.Matrix()
+    sb = (1.0 + 0.25 * (S - 1.0)) * 1.03 * os_
+    mb.setScale(sb, sb, 960, 540)
+    mb.postRotate(rot * 0.6, 960, 540)
+    mb.postTranslate(dx * 0.6, dy * 0.6)
+    return m, mb, (dx * 0.22, dy * 0.22), imp, S
+
+
+def keepout(sx, sy):
+    """visibility factor for world labels that would land on the HUD or the callout panel"""
+    a = smooth((sx - 540) / 40.0) if sy < 350 else 1.0
+    if sy < 350 and sx < 540:
+        a = min(a, smooth((sy - 330) / 20.0))
+    if sx > 1280 and 270 < sy < 620:
+        a = min(a, smooth((1280 - sx + 40) / 40.0))
+    return clamp(a)
+
+
+def map_pt(x, y):
+    p = CUR_M.mapXY(float(x), float(y))
+    return p.x(), p.y()
+
+
+def world_pt(cam, day, lp):
+    x, y, _ = cam.proj(day, lp)
+    x, y = cam.rot_pt(float(x), float(y))
+    return map_pt(x, y)
+
+
+def _reticle(c, px, py, r, rgb, al, ln=15):
+    p = P(rgb, 0.95 * al, stroke=2.2)
+    for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+        cx_, cy_ = px + sx * r, py + sy * r
+        c.drawLine(cx_, cy_, cx_ - sx * ln, cy_, p)
+        c.drawLine(cx_, cy_, cx_, cy_ - sy * ln, p)
+    c.drawCircle(px, py, 3.0, P((255, 255, 255), al))
+
+
+def _pill_text(c, txt, x, y, f, rgb, al, align='left', spacing=0.6, txt_rgb=(235, 240, 248)):
+    w = text_width(f, txt, spacing)
+    if align == 'right':
+        x0 = x - w - 22
+    elif align == 'center':
+        x0 = x - w / 2 - 11
+    else:
+        x0 = x
+    h = f.getSize()
+    rect = skia.Rect(x0, y - h - 6, x0 + w + 22, y + 9)
+    c.drawRoundRect(rect, 4, 4, P((6, 12, 24), 0.84 * al))
+    c.drawRoundRect(rect, 4, 4, P(rgb, 0.75 * al, stroke=1.2))
+    draw_text(c, txt, x0 + 11, y, f, P(txt_rgb, al), spacing=spacing)
+    return rect
+
+
+def draw_marks(c, cam, t):
+    """'标点': lock-on reticle, price/date tag, measurement arrow, ATH line"""
+    if t < 8.5 or t > 180.0:
+        return
+    for lv, fd, tm in B.MILESTONE_T:
+        a = t - tm
+        if 0 <= a <= 2.8:
+            al = env(a, 0.0, 0.2, 2.8, 0.6)
+            px, py = world_pt(cam, fd, math.log10(lv))
+            _reticle(c, px, py, 34 + 30 * (1 - ease_out(a / 0.35)), (255, 214, 150), al)
+    for ei, ev in enumerate(EVENTS):
+        a = t - ev.t
+        life = 3.4
+        if ei + 1 < len(EVENTS):
+            life = min(life, max(EVENTS[ei + 1].t - ev.t + 0.25, 1.6))
+        if a < 0 or a > life or ev.cat == '开端':
+            continue
+        al = env(a, 0.0, 0.2, life, 0.5)
+        if al <= 0:
+            continue
+        rgb = ev.color
+        light = mix(rgb, (255, 255, 255), 0.3)
+        px, py = world_pt(cam, ev.day, LOGP[ev.day])
+        r = 40 + 34 * (1 - ease_out(a / 0.35))
+        _reticle(c, px, py, r, light, al)
+        # price + date tag next to the lock-on
+        tag = f'${B.fmt_price(PRICE[ev.day])}  ·  {ev.date.replace("-", ".")}'
+        f = font('med', 17)
+        tw = text_width(f, tag, 0.6) + 22
+        ty = py + r + 34 if ev.negative else py - r - 10
+        if ty > 950 or ty < 120:
+            ty = py - r - 10 if ev.negative else py + r + 34
+        if px - r - 12 - tw > 20:
+            _pill_text(c, tag, px - r - 12, ty, f, rgb, al * ease_out(a / 0.3), align='right')
+        else:
+            _pill_text(c, tag, px + r + 12, ty, f, rgb, al * ease_out(a / 0.3))
+        # all-time-high guide line
+        if ev.cat in ('顶点', '新高'):
+            ga = al * ease_out((a - 0.1) / 0.4)
+            if ga > 0:
+                xe = min(px + r + 40 + 230 * ease_out(a / 0.6), 1285)
+                dp = P(light, 0.8 * ga, stroke=1.5)
+                dp.setPathEffect(skia.DashPathEffect.Make([8.0, 6.0], 0.0))
+                c.drawLine(px + r + 4, py, xe, py, dp)
+                draw_text(c, 'ATH', xe, py - 8, font('bold', 15), P(light, ga), spacing=2.5, align='right')
+        # measurement arrow: from the reference level to the end level
+        if ev.bracket:
+            d0, d1 = ev.bracket
+            tb = max(ev.t, float(B.time_of_day(d1)))
+            ba = env(t, tb, 0.25, ev.t + life, 0.5)
+            if ba > 0:
+                x0, y0 = world_pt(cam, d0, LOGP[d0])
+                x1, y1 = world_pt(cam, d1, LOGP[d1])
+                pct = PRICE[d1] / PRICE[d0] - 1
+                bx = max(x1, px) + 0.6 * r + 16
+                dp = P(light, 0.8 * ba, stroke=1.4)
+                dp.setPathEffect(skia.DashPathEffect.Make([7.0, 6.0], 0.0))
+                xs0 = max(x0, 560.0) if y0 < 350 else x0
+                c.drawLine(xs0, y0, bx + 14, y0, dp)
+                if xs0 == x0:
+                    c.drawCircle(x0, y0, 4.0, P(light, ba))
+                c.drawLine(x1 + 6, y1, bx + 14, y1, dp)
+                g = ease_out((t - tb) / 0.45)
+                ye = y0 + (y1 - y0) * g
+                ap = P(light, ba, stroke=2.4)
+                c.drawLine(bx, y0, bx, ye, ap)
+                dirn = 1.0 if y1 > y0 else -1.0
+                head = skia.Path()
+                head.moveTo(bx, ye + 2 * dirn)
+                head.lineTo(bx - 8, ye - 12 * dirn)
+                head.lineTo(bx + 8, ye - 12 * dirn)
+                head.close()
+                c.drawPath(head, P(light, ba))
+                label = f'{"+" if pct >= 0 else "−"}{abs(pct) * 100:.1f}%'
+                fl = font('semi', 28)
+                lw = text_width(fl, label, 0.5) + 22
+                lx = bx + 12
+                if lx + lw > 1296:
+                    lx = bx - 16 - lw
+                ly = (y0 + y1) / 2 + 12
+                _pill_text(c, label, lx, ly, fl, rgb, ba * g, txt_rgb=light, spacing=0.5)
+
+
+def draw_flash(c, t):
+    for ev in EVENTS:
+        a = t - ev.t
+        if ev.shake >= 16 and 0 <= a < 0.6:
+            c.drawRect(skia.Rect(0, 0, W, H), P(mix(ev.color, (255, 255, 255), 0.5), 0.20 * math.exp(-a / 0.11), plus=True))
+
+
+def hud_pulse(t):
+    p = 0.0
+    for ev in EVENTS:
+        a = t - ev.t
+        if 0 <= a < 1.6:
+            p = max(p, math.exp(-a / 0.45))
+    return p
+
 
 
 # ----------------------------------------------------------------------------
@@ -858,6 +1101,9 @@ def draw_hud(c, t, h, valc, alpha=1.0):
         vrgb = mix((250, 250, 253), (243, 160, 135), valc)
     else:
         vrgb = mix((250, 250, 253), (110, 214, 200), -valc)
+    pulse = hud_pulse(t)
+    if pulse > 0.01:
+        draw_text(c, B.fmt_price(price), 1818, 187, font('xlight', 100), P(vrgb, 0.75 * pulse * alpha, blur=9), spacing=1.5, align='right')
     draw_text(c, B.fmt_price(price), 1818, 187, font('xlight', 100), P(vrgb, alpha), spacing=1.5, align='right')
     sl = sublabel(i, h)
     if sl:
@@ -931,6 +1177,8 @@ def _callout_box(c, cam, ev, a, slide):
     # leader line
     ex, ey, _ = event_point(cam, ev)
     ex, ey = cam.rot_pt(ex, ey)
+    ex, ey = map_pt(ex, ey)
+    ex, ey = ex - CUR_HOFF[0], ey - CUR_HOFF[1]
     if ex > -20:
         la = a * smooth((ex + 20) / 60.0)
         pth = skia.Path()
@@ -949,10 +1197,31 @@ def _callout_box(c, cam, ev, a, slide):
     draw_text(c, ev.date.replace('-', '.'), 1342 + wcat + 20, y0 + 46, font('reg', 19), P((156, 165, 182), a), spacing=1.2)
     if ev.tag:
         draw_text(c, ev.tag, 1792, y0 + 45, font('semi', 14), P((169, 173, 186), a), spacing=4.2, align='right')
-    draw_text(c, ev.title, 1342, ty, font('serif', 44), P((255, 255, 255), a), spacing=0.6)
+    a_ev = CUR_T - ev.t
+    ftitle = font('serif', 44)
+    if not ev.value and a_ev >= 0 and ev.cat != '开端':
+        sw = ease_out(a_ev / 0.4)
+        tw_ = text_width(ftitle, ev.title, 0.6)
+        c.drawRect(skia.Rect(1336, ty - 44, 1336 + (tw_ + 14) * sw, ty + 10),
+                   P(rgb, (0.26 * math.exp(-a_ev / 1.2) + 0.10) * a))
+    draw_text(c, ev.title, 1342, ty, ftitle, P((255, 255, 255), a), spacing=0.6)
     if ev.value:
-        vrgb = rgb if ev.cat not in ('开端',) else B.GOLD
-        draw_text(c, ev.value, 1340, vy, font('light', 60), P(mix(vrgb, (255, 255, 255), 0.08), a), spacing=1.0)
+        vrgb = mix(rgb if ev.cat not in ('开端',) else B.GOLD, (255, 255, 255), 0.08)
+        fv = font('light', 60)
+        if a_ev >= 0 and ev.cat != '开端':
+            sw = ease_out(a_ev / 0.4)
+            vw = text_width(fv, ev.value, 1.0)
+            c.drawRect(skia.Rect(1334, vy - 50, 1334 + (vw * 1.06 + 18) * sw, vy + 11),
+                       P(rgb, (0.30 * math.exp(-a_ev / 1.2) + 0.12) * a))
+        pop = 1.0 + 0.24 * (1 - ease_out(a_ev / 0.45)) if 0 <= a_ev else 1.0
+        c.save()
+        c.translate(1340, vy)
+        c.scale(pop, pop)
+        c.translate(-1340, -vy)
+        if 0 <= a_ev < 1.8:
+            draw_text(c, ev.value, 1340, vy, fv, P(vrgb, 0.7 * math.exp(-a_ev / 0.6) * a, blur=10), spacing=1.0)
+        draw_text(c, ev.value, 1340, vy, fv, P(vrgb, a), spacing=1.0)
+        c.restore()
     fd = font('sans_m', 21)
     for k, line in enumerate(ev.desc):
         draw_text(c, line, 1342, dy0 + 37 * k, fd, P((218, 226, 239), 0.93 * a), spacing=0.3)
@@ -1222,7 +1491,7 @@ _CAM_END_START = None
 
 
 def render_frame(fi, arr=None):
-    global _CAM_END_START
+    global _CAM_END_START, CUR_M, CUR_T, CUR_HOFF
     t = fi / FPS
     if arr is None:
         arr = np.zeros((H, W, 4), np.uint8)
@@ -1231,11 +1500,13 @@ def render_frame(fi, arr=None):
     c.clear(skia.Color4f(0.004, 0.012, 0.047, 1))
     warm, teal, valc = CAM['warm'][fi], CAM['teal'][fi], CAM['valcol'][fi]
     h = B.HEAD[fi]
-    draw_background(c, t, warm, teal)
-    draw_dust(c, t)
-
+    CUR_T = t
     hud_a = smooth((t - 7.3) / 0.8) * (1 - smooth((t - 182.7) / 0.6))
     if t < 8.5:
+        CUR_M = skia.Matrix()
+        CUR_HOFF = (0.0, 0.0)
+        draw_background(c, t, warm, teal)
+        draw_dust(c, t)
         draw_vignette(c)
         draw_intro(c, t)
         if hud_a > 0:
@@ -1254,8 +1525,18 @@ def render_frame(fi, arr=None):
     else:
         cam = cam_for_frame(fi, t)
         ending = 0.0
+    m_world, m_bg, hoff, imp, zoom = camera_fx(fi, t, cam)
+    CUR_M = m_world
+    CUR_HOFF = hoff
 
     c.save()
+    c.concat(m_bg)
+    draw_background(c, t, warm, teal)
+    draw_dust(c, t)
+    c.restore()
+
+    c.save()
+    c.concat(m_world)
     if abs(cam.roll) > 1e-6:
         c.rotate(math.degrees(cam.roll), cam.hx, cam.hy)
     draw_grid(c, cam, t, alpha=1.0 - 0.45 * ending, labels=ending < 0.3, hl=grid_highlight(t))
@@ -1270,14 +1551,25 @@ def render_frame(fi, arr=None):
     draw_head(c, cam, t, m, scale=1.0 - 0.3 * ending)
     c.restore()
 
+    draw_flash(c, t)
     draw_vignette(c)
+    draw_marks(c, cam, t)
+    c.save()
+    c.translate(hoff[0], hoff[1])
     draw_callout(c, cam, t)
     draw_era(c, t)
     if hud_a > 0:
         draw_hud(c, t, h, valc, hud_a)
         draw_minimap(c, t, h, valc, hud_a)
+    c.restore()
     if t >= 179.5:
         draw_ending_text(c, t, cam)
+    # chromatic split on violent hits
+    if imp > 9.0:
+        k = int(min(5, round((imp - 6.0) * 0.25)))
+        if k >= 1:
+            arr[:, :, 0] = np.roll(arr[:, :, 0], k, axis=1)
+            arr[:, :, 2] = np.roll(arr[:, :, 2], -k, axis=1)
     return arr
 
 

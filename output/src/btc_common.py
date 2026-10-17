@@ -182,7 +182,50 @@ class Event:
         self.color = CATS[self.cat]
         self.positive = self.cat in ('开端', '顶点', '新高', '暴涨', '大选')
         self.negative = self.cat in ('危机', '暴跌', '谷底')
+        # camera push-in strength (0 = none)
+        if self.cat == '开端':
+            self.zoom = 0.0
+        elif self.date in BLACK_SWANS or self.cat in ('顶点', '谷底'):
+            self.zoom = 0.42
+        elif self.cat in ('危机', '暴跌', '新高', '暴涨', '大选'):
+            self.zoom = 0.30
+        else:
+            self.zoom = 0.18
+        # camera shake strength in px
+        self.shake = SHAKE.get(self.date, {'顶点': 6.0, '谷底': 5.0, '新高': 4.0, '暴涨': 6.0,
+                                           '大选': 6.0, '危机': 8.0, '暴跌': 10.0}.get(self.cat, 0.0))
+        b = BRACKETS.get(self.date)
+        self.bracket = (day_of(b[0]), day_of(b[1])) if b else None
 
+
+# black swans: strongest push-in and shake
+BLACK_SWANS = {'2011-06-19', '2013-04-10', '2014-02-24', '2020-03-12', '2022-11-08', '2025-10-10', '2026-02-05'}
+SHAKE = {
+    '2011-06-19': 16, '2013-04-10': 20, '2013-10-02': 10, '2014-02-24': 16, '2016-08-02': 10,
+    '2017-09-04': 12, '2020-03-12': 26, '2021-05-19': 14, '2021-09-07': 8, '2022-05-09': 14,
+    '2022-06-13': 12, '2022-11-08': 20, '2025-04-07': 10, '2025-10-10': 18, '2026-02-05': 18,
+}
+# measurement arrows drawn on the chart: event date -> (from date, to date)
+BRACKETS = {
+    '2011-11-18': ('2011-06-08', '2011-11-18'),
+    '2013-04-10': ('2013-04-09', '2013-04-11'),
+    '2013-10-02': ('2013-10-01', '2013-10-02'),
+    '2015-01-14': ('2013-12-04', '2015-01-14'),
+    '2016-08-02': ('2016-08-01', '2016-08-02'),
+    '2017-09-04': ('2017-09-01', '2017-09-14'),
+    '2018-12-15': ('2017-12-16', '2018-12-15'),
+    '2020-03-12': ('2020-03-11', '2020-03-12'),
+    '2021-02-08': ('2021-02-07', '2021-02-08'),
+    '2021-05-19': ('2021-05-18', '2021-05-19'),
+    '2021-09-07': ('2021-09-06', '2021-09-07'),
+    '2022-05-09': ('2022-05-08', '2022-05-09'),
+    '2022-06-13': ('2022-06-12', '2022-06-13'),
+    '2022-11-08': ('2022-11-07', '2022-11-09'),
+    '2024-11-05': ('2024-11-05', '2024-11-06'),
+    '2025-04-07': ('2025-04-02', '2025-04-08'),
+    '2025-10-10': ('2025-10-09', '2025-10-10'),
+    '2026-02-05': ('2026-02-04', '2026-02-05'),
+}
 
 EVENTS = [Event(r) for r in EVENTS_RAW]
 
@@ -312,7 +355,8 @@ def theta_at(t):
 def precompute_camera():
     n = NFRAMES
     cam = {k: np.zeros(n) for k in ('k', 's', 'C', 'hx', 'hy', 'theta', 'roll', 'vis',
-                                       'warm', 'teal', 'valcol', 'hl')}
+                                       'warm', 'teal', 'valcol', 'hl', 'volshake')}
+    vol_s = 0.0
     dt_ = 1.0 / FPS
     k_log = None
     s_log = None
@@ -379,6 +423,11 @@ def precompute_camera():
         cam['teal'][f] = teal
         cam['valcol'][f] = valc
         cam['hl'][f] = lh
+        # hand-held wobble while the market swings hard (big daily moves near the head)
+        vmax = float(np.max(np.abs(RET1[max(i - 2, 0):i + 1])))
+        v_t = 5.0 * min(max((vmax - 0.03) / 0.05, 0), 1) if 9.0 <= t <= T_END else 0.0
+        vol_s = _ema(vol_s, v_t, dt_, 0.22)
+        cam['volshake'][f] = vol_s
     return cam
 
 

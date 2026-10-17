@@ -291,9 +291,24 @@ def main():
             add(boom(1.2, 130, 60, 0.25), te, 0.12, 0.2, 0.2)
             add(sparkle(0.9, 8, 3000, 7000, seed=300 + i), te, 0.05, 0.4, 0.5)
 
+    # ---------------- camera push-in, lock-on marks, measurement arrows
+    for i, ev in enumerate(B.EVENTS):
+        if ev.zoom > 0:
+            add(whoosh(0.85, 180, 1400, peak=0.7, q=1.1), ev.t - 0.6, 0.05 + 0.12 * ev.zoom, 0.25, 0.3)
+        if ev.cat != '开端':
+            add(click(2900, 0.025, 0.2), ev.t + 0.03, 0.035, 0.3, 0.15)
+            add(click(3900, 0.02, 0.2), ev.t + 0.11, 0.03, 0.35, 0.15)
+        if ev.shake >= 16:
+            add(rumble(2.5), ev.t, 0.12, -0.2, 0.2)
+        if ev.bracket:
+            tb = max(ev.t, float(B.time_of_day(ev.bracket[1])))
+            add(whoosh(0.4, 2500, 600, peak=0.3, q=1.6), tb, 0.035, 0.35, 0.2)
+            add(click(1600, 0.04, 0.3), tb + 0.42, 0.04, 0.35, 0.2)
+
     # ---------------- milestones ("首次突破")
     for k, (lv, fd, tm) in enumerate(B.MILESTONE_T):
         add(riser(0.9, 300, 4000), tm - 0.9, 0.09, -0.2, 0.2)
+        add(whoosh(0.85, 180, 1400, peak=0.7, q=1.1), tm - 0.6, 0.08, -0.2, 0.3)
         add(boom(2.0, 110, 50, 0.45), tm, 0.22, -0.1, 0.3)
         for f, g in ((783.99, 0.10), (1174.66, 0.08), (1567.98, 0.07), (2349.3, 0.05)):
             add(bell(f, 3.0, 1.1), tm, g, -0.2, 0.7)

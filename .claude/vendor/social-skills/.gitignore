@@ -1,0 +1,40 @@
+.root
+
+# Provider credentials. .env.example is the template and IS tracked; the
+# filled-in .env never is — setup's own repair step creates it by copying.
+.env
+.DS_Store
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+dist/
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.tox/
+.nox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# The Remotion composer. Source is tracked; everything the pipeline GENERATES
+# into it is not. registry.ts in particular is written by build_props from the
+# props directory listing, so it names whatever projects a given machine has
+# built — committing it would leak project names and conflict on every build.
+composer/node_modules/
+composer/props/
+composer/public/
+composer/out/
+composer/src/registry.ts
+
+# The editor render backend's artefacts. `scrollmark build` writes the project
+# document beside the storyboard and `scrollmark render` writes the mp4 next to
+# it; both are generated from tracked inputs, exactly like composer/props/.
+projects/*/cut.project.json
+projects/*/cut.mp4

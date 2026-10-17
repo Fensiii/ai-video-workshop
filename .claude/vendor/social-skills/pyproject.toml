@@ -1,0 +1,173 @@
+# The engine behind the video-production skills.
+#
+# The skills in skills/ are prose and install with `npx skills add`, which only
+# ever copies skills/<name>/ folders — it never looks at src/. Installing this
+# package is therefore a separate, optional step, and nothing about the skills
+# install story depends on it.
+
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "video-studio-engine"
+version = "0.1.0"
+description = "The programs behind the social-skills video skills: sourcing, voice, generation, measurement and editor handoff for short-form video."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Scrollmark" }]
+keywords = ["video", "short-form", "social", "ffmpeg", "stock-footage", "tts"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Video",
+]
+
+# The base install is deliberately thin. httpx is the one dependency shared by
+# enough modules (every stock source, every hosted generator) that installing
+# without it leaves the package barely able to do anything.
+dependencies = [
+  "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+# Downloading footage from a URL.
+sourcing = ["yt-dlp>=2024.1.0"]
+
+# Local speech synthesis. kokoro has no wheels for 3.13+ at time of writing, so
+# the marker keeps `pip install .[audio]` from failing outright on a newer
+# interpreter — but the module will then raise at import, which is the honest
+# outcome. Use a 3.11/3.12 environment for voice.
+audio = [
+  "kokoro>=0.9.0; python_version < '3.13'",
+  "soundfile>=0.12",
+  "numpy>=1.26",
+]
+
+# Checking a render against the plan it was built from: decoded frames, motion,
+# audio structure, composition. Ported from the showwatcher analyzer. No models
+# here — the model-backed checks live behind the qc-* extras below, so this one
+# stays installable on a laptop.
+qc = [
+  "numpy>=1.26",
+  # NO opencv is named here, and the reason is not the one a previous version of
+  # this comment gave. It claimed naming opencv-contrib-python kept [standard]
+  # down to one cv2 provider. That was wrong: scenedetect hard-requires
+  # opencv-python (verified against its PyPI metadata; its only extras are pyav
+  # and moviepy, neither of which removes the dependency), so declaring contrib
+  # here produced TWO providers in [qc] alone rather than one.
+  #
+  # What is actually true, and is not fixable from this file:
+  #   [qc]       -> scenedetect -> opencv-python
+  #   [vision]   -> mediapipe   -> opencv-contrib-python
+  # Both are transitive, both are hard, and neither dependency accepts the
+  # other's distribution. So [standard], which takes both extras, installs two
+  # packages that each provide cv2, and the last one unpacked owns the module.
+  # pip neither resolves nor warns about that.
+  #
+  # Not naming one here is still strictly better: it makes [qc] on its own
+  # clean, and stops this file asserting a guarantee it cannot keep. Everything
+  # this package calls (cvtColor, Laplacian, the basic array ops) exists in both
+  # distributions, so the collision is a hygiene problem rather than a broken
+  # install — but it is real, and it should be recorded rather than papered over.
+  "scenedetect>=0.6.4",
+  "rapidfuzz>=3.9",
+  # prompt_fit reads checks.yaml. Undeclared until now, so the detector died one
+  # line past the missing data package it also died on.
+  "pyyaml>=6.0",
+  "scipy>=1.14,<1.18",
+]
+
+# Model-backed QC, one extra per model so no single install drags in every one.
+# Each maps to detectors the engine skips cleanly when the extra is absent.
+qc-ocr = ["video-studio-engine[qc]", "easyocr>=1.7"]        # caption_sync, layout
+qc-yolo = ["video-studio-engine[qc]", "ultralytics>=8.2", "supervision>=0.22"]
+  # objects (YOLO detections) and entity_tracking (those detections through
+  # ByteTrack, which is supervision — without it entity_tracking alone skips)
+# lip_sync's real mouth backend. Note this is NOT a quarantine for mediapipe:
+# [vision] already requires it, so anything installing [standard] has it
+# regardless. This extra is what makes lip_sync work for someone who took
+# [qc] on its own.
+qc-face = ["video-studio-engine[qc]", "mediapipe>=0.10"]
+qc-clip = ["video-studio-engine[qc]", "fastembed>=0.3"]     # prompt_visual
+
+# Running the test suite. pytest only — the suite deliberately builds real
+# WAVs and real mp4s with ffmpeg rather than mocking them, because every bug it
+# exists to catch was one where the code ran happily and produced nothing.
+dev = ["video-studio-engine[qc]", "pytest>=8.0", "build>=1.0"]
+
+# Word timings for narration this studio did not synthesise. Optional because
+# it pulls a ~200MB CTranslate2 inference runtime that only gen_captions needs;
+# tts_kokoro already emits timings for anything it speaks itself.
+captions = ["faster-whisper>=1.0"]
+
+# Hosted image/video/music models, plus the procedural boil renderer's PNG path.
+generate = [
+  "google-genai>=0.3",
+  "pillow>=10",
+]
+
+# Segmentation, compositing and hand tracking. The heaviest extra by far.
+vision = [
+  "mediapipe>=0.10",
+  "numpy>=1.26",
+  # No opencv named here on purpose. mediapipe hard-requires
+  # opencv-contrib-python, so declaring opencv-python alongside it put two
+  # providers of the same cv2 module in one environment and left the winner to
+  # installation order. [qc] names none either, for the related reason set out
+  # in its own comment: scenedetect drags in opencv-python transitively, so
+  # naming a distribution there only ADDED a provider. Neither extra declares
+  # opencv; both get one through a dependency that hard-requires a specific
+  # build. [standard] still ends up with two, which that comment explains.
+]
+
+# Timeline interchange. CapCut and FCPXML need nothing; OTIO is only for
+# export_edit.
+export = [
+  "opentimelineio>=0.17",
+  "otio-fcpx-xml-adapter",
+]
+
+# Named "standard" and not "all" on purpose. It is everything a laptop wants and
+# nothing that ships a model: no OCR, no YOLO, no CLIP, no mediapipe. It was
+# called [all] for a day, which was a lie in the name — someone installing "all"
+# and then watching four checks skip has been told two different things by the
+# same package.
+#
+# [all] is gone rather than aliased, and that removal is NOT free: pip does not
+# error on an unknown extra in a URL requirement, it does not even warn — it
+# quietly installs the base package. So an old `[all]` command now silently
+# gets less than it asks for. That is acceptable here only because the name
+# existed for part of one day, was never published to an index, and every
+# reference to it in this repo and on the website is rewritten in the same
+# change. If it had ever shipped, the alias would be the right call.
+standard = [
+  "video-studio-engine[sourcing,audio,captions,generate,vision,export,qc]",
+]
+
+[project.scripts]
+video-studio = "video_studio.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/scrollmark/social-skills"
+Source = "https://github.com/scrollmark/social-skills"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/video_studio"]
+
+# The format documents live in the skill, because that is what they are: prose
+# a person reads. They are also data now — `video-studio formats` reads their
+# frontmatter — and an installed copy has no skills/ tree to read them from.
+# Force-including them keeps one copy on disk and still ships them.
+[tool.hatch.build.targets.wheel.force-include]
+"skills/video-formats/references/formats" = "video_studio/formats"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/video_studio", "skills/video-formats/references/formats",
+           "pyproject.toml", "README.md", "LICENSE"]

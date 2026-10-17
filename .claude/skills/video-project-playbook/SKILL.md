@@ -13,8 +13,8 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 特斯拉车型进化（2D 动画） | `tesla-evolution-video` / `tesla-evolution/` | 60s、1080p60、无声，车辆拆解变形换代 + 实拍起飞 | skia-python 逐帧 |
 | 特斯拉车型进化史（科普） | `tesla-evolution-explainer` / `tesla-evolution/` | 4分20秒、中文配音 + 字幕 | HTML 动画 + Playwright 截帧 + 离线 TTS |
 | 特斯拉，凭什么？（无配音） | `tesla-evolution-explainer` / `tesla-success/` | 2分38秒、字幕 + 合成配乐 | Canvas/DOM + Playwright + numpy 配乐 |
-| 歌曲混剪 MV | `claude/song-music-video` / `output/` | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
-| 比特币 2010–2026 | `bitcoin-video` / `output/src/` | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
+| 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
+| 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。
@@ -38,7 +38,8 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 6. **成片自检**：ffprobe 看规格；抽 8 帧拼图看画面；ebur128 看响度（约 −16 LUFS、真峰值 ≤ −1 dB）。
 7. **存参考**：用户上传的参考素材会随容器消失——当场存进 `references/<类型>/`，
    配缩略拼图并更新 `references/README.md`。
-8. **交付**：`SendUserFile` 发视频；说明数据截止日、改编点、需要用户复核的文案。
+8. **存成片**：最终视频同步存进 `works/<日期>_<英文短名>/`（成片 + thumbs.jpg + 字幕/脚本），更新 `works/README.md`。
+9. **交付**：`SendUserFile` 发视频；说明数据截止日、改编点、需要用户复核的文案。
    提交到新分支，不直接推 `main`，不擅自开 PR。
 
 ## 二、环境与工具坑（云端容器）

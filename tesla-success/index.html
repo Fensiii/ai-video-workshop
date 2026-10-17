@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Why Tesla</title>
+<link rel="stylesheet" href="node_modules/@fontsource/noto-serif-sc/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/noto-serif-sc/700.css">
+<link rel="stylesheet" href="node_modules/@fontsource/noto-serif-sc/900.css">
+<style>
+  :root { --gold: #e9c47c; --gold2: #b8893f; --red: #e3343a; --ink: #f1ede4; --mute: #8d877b; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #040404; }
+  body { font-family: "Noto Serif SC", serif; color: var(--ink); }
+  #stage { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(1400px 900px at 50% 45%, #15120d 0%, #080706 55%, #030303 100%); }
+  canvas { position: absolute; inset: 0; }
+  .abs { position: absolute; opacity: 0; will-change: transform, opacity; }
+  .center { left: 0; right: 0; text-align: center; }
+  .gold { color: var(--gold); text-shadow: 0 0 30px rgba(233,196,124,.45); }
+  .red { color: var(--red); text-shadow: 0 0 26px rgba(227,52,58,.5); }
+  #cap { position: absolute; left: 0; right: 0; bottom: 120px; text-align: center; font-size: 44px; font-weight: 700;
+    letter-spacing: 3px; text-shadow: 0 2px 14px #000, 0 0 2px #000; }
+  #cap b { font-weight: 900; }
+  #corner { position: absolute; left: 70px; top: 54px; }
+  #corner .n { font-size: 54px; font-weight: 700; color: var(--gold); letter-spacing: 2px; }
+  #corner .s { font-size: 22px; color: var(--mute); letter-spacing: 6px; margin-top: 2px; }
+  #brand { position: absolute; right: 70px; top: 62px; font-size: 18px; letter-spacing: 8px; color: #5c574e; }
+  #flash { position: absolute; inset: 0; background: #fff6e2; opacity: 0; mix-blend-mode: screen; }
+  #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75) 100%); }
+  .chip { display: inline-block; padding: 14px 30px; margin: 0 14px; border: 1px solid rgba(233,196,124,.5); border-radius: 40px;
+    font-size: 34px; color: var(--gold); background: rgba(40,32,18,.55); }
+  .list div { font-size: 40px; margin: 22px 0; opacity: 0; letter-spacing: 2px; }
+  .list span { color: var(--gold); font-weight: 900; margin-right: 26px; }
+  .list em { font-style: normal; color: var(--mute); font-size: 32px; margin-left: 18px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv" width="1920" height="1080"></canvas>
+
+  <!-- open -->
+  <div id="money" class="abs center gold" style="top:380px;font-size:150px;font-weight:900;letter-spacing:2px"></div>
+  <div id="moneySub" class="abs center" style="top:640px;font-size:30px;letter-spacing:22px;color:var(--mute)">TESLA · MARKET CAP</div>
+  <div id="d2008" class="abs center red" style="top:400px;font-size:34px;letter-spacing:16px">2008 · 12</div>
+  <!-- title -->
+  <div id="title" class="abs center gold" style="top:360px;font-size:170px;font-weight:900;letter-spacing:12px">特斯拉，凭什么？</div>
+  <div id="titleSub" class="abs center" style="top:660px;font-size:28px;letter-spacing:30px;color:var(--mute)">WHY TESLA WON</div>
+  <!-- 2008 -->
+  <div id="cal" class="abs center" style="top:250px;font-size:200px;font-weight:900;letter-spacing:6px"></div>
+  <div id="calSub" class="abs center" style="top:545px;font-size:28px;letter-spacing:14px;color:var(--mute)">现 金 储 备</div>
+  <div id="saved" class="abs center gold" style="top:680px;font-size:42px;letter-spacing:16px">融 资 完 成</div>
+  <!-- chapter card -->
+  <div id="chapNum" class="abs center gold" style="top:330px;font-size:230px;font-weight:900"></div>
+  <div id="chapName" class="abs center" style="top:620px;font-size:52px;letter-spacing:24px"></div>
+  <!-- battery -->
+  <div id="drop" class="abs gold" style="left:1330px;top:300px;font-size:150px;font-weight:900">−87%</div>
+  <!-- ota -->
+  <div id="chips" class="abs center" style="top:700px"><span class="chip">＋ 加速</span><span class="chip">＋ 续航</span><span class="chip">＋ 新功能</span></div>
+  <div id="otaTag" class="abs center gold" style="top:640px;font-size:28px;letter-spacing:10px"></div>
+  <!-- vertical -->
+  <div id="sc" class="abs center gold" style="top:150px;font-size:120px;font-weight:900"></div>
+  <div id="scSub" class="abs center" style="top:300px;font-size:26px;letter-spacing:14px;color:var(--mute)">全球超级充电桩</div>
+  <!-- factory -->
+  <div id="parts" class="abs center gold" style="top:170px;font-size:110px;font-weight:900"></div>
+  <!-- brand -->
+  <div id="zero" class="abs center gold" style="top:270px;font-size:330px;font-weight:900">$0</div>
+  <div id="zeroSub" class="abs center" style="top:690px;font-size:28px;letter-spacing:14px;color:var(--mute)">传统广告投入</div>
+  <!-- result -->
+  <div id="x700" class="abs gold" style="left:1460px;top:150px;font-size:120px;font-weight:900">×700</div>
+  <!-- ending -->
+  <div id="bet" class="abs center" style="top:380px;font-size:120px;font-weight:900;letter-spacing:10px"><span class="gold">自动驾驶</span> · <span class="gold">机器人</span></div>
+  <!-- answer -->
+  <div id="ansTitle" class="abs center gold" style="top:120px;font-size:76px;font-weight:900;letter-spacing:8px">特斯拉，凭什么？</div>
+  <div id="ans" class="abs list" style="left:520px;top:270px">
+    <div><span>01</span>第一性原理<em>把成本算到底</em></div>
+    <div><span>02</span>软件<em>车会越开越新</em></div>
+    <div><span>03</span>垂直整合<em>关键环节握在自己手里</em></div>
+    <div><span>04</span>制造<em>工厂就是产品</em></div>
+    <div><span>05</span>品牌<em>产品本身就是广告</em></div>
+  </div>
+  <div id="ansEnd" class="abs center" style="top:880px;font-size:50px;font-weight:900;letter-spacing:12px">以及——<span class="red">敢于押上一切</span>。</div>
+
+  <div id="corner" style="opacity:0"><div class="n"></div><div class="s"></div></div>
+  <div id="brand">WHY · TESLA</div>
+  <div id="cap"></div>
+  <div id="vignette"></div>
+  <div id="flash"></div>
+</div>
+<script>
+const W = 1920, H = 1080;
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = (x) => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
+const easeIO = (x) => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const P = (t, a, d) => ease((t - a) / d);
+const win = (t, a, b, fi = .5, fo = .5) => Math.min(P(t, a, fi), 1 - P(t, b - fo, fo));
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed);
+  x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
+const GOLD = "233,196,124", RED = "227,52,58", INK = "241,237,228";
+
+let S; // story
+function set(el, op, tf = "", extra) {
+  el = typeof el === "string" ? $(el) : el;
+  el.style.opacity = op; el.style.transform = tf;
+  el.style.filter = op < 1 && op > 0 ? `blur(${(1 - op) * 8}px)` : "none";
+  if (extra) Object.assign(el.style, extra);
+}
+const rise = (p, px = 30) => `translateY(${(1 - p) * px}px)`;
+
+// ---------- canvas helpers ----------
+function glowLine(pts, color, width, glow, alpha = 1) {
+  if (pts.length < 2) return;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.lineJoin = ctx.lineCap = "round";
+  ctx.shadowColor = `rgba(${color},.9)`; ctx.shadowBlur = glow;
+  ctx.strokeStyle = `rgba(${color},1)`; ctx.lineWidth = width;
+  ctx.beginPath(); ctx.moveTo(...pts[0]); pts.slice(1).forEach(p => ctx.lineTo(...p)); ctx.stroke(); ctx.restore();
+}
+function dot(x, y, r, color, a = 1, glow = 0) {
+  ctx.save(); ctx.globalAlpha = clamp(a); ctx.fillStyle = `rgb(${color})`;
+  if (glow) { ctx.shadowColor = `rgba(${color},1)`; ctx.shadowBlur = glow; }
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.restore();
+}
+function text(s, x, y, size, color, a = 1, align = "center", weight = 400) {
+  ctx.save(); ctx.globalAlpha = clamp(a); ctx.fillStyle = `rgb(${color})`; ctx.textAlign = align;
+  ctx.font = `${weight} ${size}px "Noto Serif SC"`; ctx.fillText(s, x, y); ctx.restore();
+}
+function burst(t, t0, cx, cy, n, seed, color, speed = 600, life = 2) {
+  const lt = t - t0; if (lt < 0 || lt > life) return;
+  const r = rng(seed);
+  for (let i = 0; i < n; i++) {
+    const ang = r() * Math.PI * 2, sp = speed * (.2 + r() * .8), l = life * (.4 + r() * .6);
+    if (lt > l) continue;
+    const k = 1 - Math.exp(-lt * 2.2);
+    dot(cx + Math.cos(ang) * sp * k / 2.2, cy + Math.sin(ang) * sp * k / 2.2 + 40 * lt * lt, 1 + r() * 2.2, color, (1 - lt / l), 8);
+  }
+}
+function dust(t, alpha) {
+  const r = rng(11);
+  for (let i = 0; i < 140; i++) {
+    const x0 = r() * W, y0 = r() * H, vx = (r() - .5) * 14, vy = -4 - r() * 10, ph = r() * 7, s = .6 + r() * 1.6;
+    const x = ((x0 + vx * t) % W + W) % W, y = ((y0 + vy * t) % H + H) % H;
+    dot(x, y, s, GOLD, alpha * (.15 + .35 * (.5 + .5 * Math.sin(t * 1.3 + ph))));
+  }
+}
+// car silhouette (Model S-like side profile) as Path2D in a 600x200 box
+function carPath() {
+  const p = [[8,140],[12,120],[40,110],[150,100],[205,82],[262,62],[330,58],[405,66],[480,90],[560,100],[588,112],[592,140]]
+    .map(([x, y]) => [300 + (x - 300) * .8, 146 - (146 - y) * 1.2]);
+  let d = `M${p[0]}`;
+  for (let i = 0; i < p.length - 1; i++) {
+    const a = p[Math.max(i - 1, 0)], b = p[i], c = p[i + 1], e = p[Math.min(i + 2, p.length - 1)];
+    d += `C${b[0] + (c[0] - a[0]) / 6},${b[1] + (c[1] - a[1]) / 6} ${c[0] - (e[0] - b[0]) / 6},${c[1] - (e[1] - b[1]) / 6} ${c[0]},${c[1]}`;
+  }
+  const last = p[p.length - 1], cy = 146;
+  d += `L${last[0]},${cy}`;
+  for (const x of [300 + 178 * .8, 300 - 188 * .8]) d += `L${x + 42},${cy}A42,42 0 0 0 ${x - 42},${cy}`;
+  return { body: new Path2D(d + `L${p[0][0]},${cy}Z`), wheels: [300 - 188 * .8, 300 + 178 * .8] };
+}
+const CAR = carPath();
+function drawCar(cx, cy, scale, stroke, fillA, color, glow, drawP = 1) {
+  ctx.save(); ctx.translate(cx - 300 * scale, cy - 100 * scale); ctx.scale(scale, scale);
+  ctx.setLineDash([2400 * drawP, 3000]);
+  ctx.shadowColor = `rgba(${color},.9)`; ctx.shadowBlur = glow;
+  ctx.fillStyle = `rgba(${color},${fillA})`; ctx.fill(CAR.body);
+  ctx.strokeStyle = `rgba(${color},${stroke})`; ctx.lineWidth = 2.2 / scale * 1.4; ctx.stroke(CAR.body);
+  ctx.setLineDash([]);
+  for (const x of CAR.wheels) { ctx.beginPath(); ctx.arc(x, 146, 34, 0, 7); ctx.strokeStyle = `rgba(${color},${stroke})`; ctx.stroke(); }
+  ctx.restore();
+}
+
+// ---------- scenes ----------
+const sceneAt = (t) => S.scenes.find(s => t >= s.start && t < s.end) || S.scenes[S.scenes.length - 1];
+
+function drawOpen(t) {
+  // exponential market-cap curve racing to the top-right
+  const p = clamp(t / 3.2), x0 = 160, y0 = 900, x1 = 1760, y1 = 160;
+  const pts = [];
+  for (let i = 0; i <= 200 * p; i++) {
+    const u = i / 200, r = rng(i * 7 + 3);
+    pts.push([x0 + (x1 - x0) * u, y0 - (y0 - y1) * (Math.pow(u, 4) * .92 + u * .08) + (r() - .5) * 18 * u]);
+  }
+  const a = t < 8.4 ? (t < 3.2 ? 1 : .35) : 0;
+  glowLine(pts, GOLD, 4, 30, a);
+  if (t < 3.2 && pts.length) dot(...pts[pts.length - 1], 7, INK, 1, 40);
+  // axis ticks
+  for (let i = 0; i < 12; i++) text(String(2010 + i), x0 + i * 145, 960, 18, "120,112,98", a * .8);
+  burst(t, 3.2, W / 2, 470, 260, 5, GOLD, 1400, 2.6);
+  // money counter
+  const v = t < 3.2 ? 1e12 * Math.pow(p, 5) : 1e12;
+  set("money", t < 8.4 ? 1 : 0, `scale(${t < 3.2 ? .8 + .2 * p : 1 + .015 * Math.sin(t * 3)})`);
+  $("money").textContent = "$" + Math.floor(v).toLocaleString("en-US");
+  set("moneySub", t > 3.3 && t < 8.4 ? P(t, 3.3, .6) : 0);
+  // heartbeat dot after the cut
+  if (t >= 8.9) {
+    const beat = ((t - 9) % .85) / .85, pulse = Math.exp(-beat * 6) + .5 * Math.exp(-Math.max(0, beat - .21) * 8) * (beat > .21);
+    const a2 = P(t, 8.9, .6) * (1 - P(t, 13.2, .4));
+    dot(W / 2, 540, 6 + 10 * pulse, RED, a2, 30 + 50 * pulse);
+    // shrinking flat-line
+    glowLine([[W / 2 - 500, 540], [W / 2 - 30, 540]], RED, 1.5, 10, a2 * .35);
+    glowLine([[W / 2 + 30, 540], [W / 2 + 500, 540]], RED, 1.5, 10, a2 * .35);
+  }
+  set("d2008", win(t, 10.6, 13.4, .6, .3) , rise(P(t, 10.6, .8), 15));
+}
+
+function drawTitle(t, s) {
+  const lt = t - s.start;
+  burst(t, s.start, W / 2, 470, 320, 9, GOLD, 1600, 3);
+  // converging rays
+  ctx.save(); ctx.globalAlpha = .25 * (1 - P(lt, 0, 4));
+  for (let i = 0; i < 48; i++) { const a = i / 48 * Math.PI * 2;
+    glowLine([[W / 2 + Math.cos(a) * 200, 470 + Math.sin(a) * 200], [W / 2 + Math.cos(a) * 1400, 470 + Math.sin(a) * 1400]], GOLD, 1, 0, .4); }
+  ctx.restore();
+  const o = win(t, s.start, s.end, .25, .5);
+  set("title", o, `scale(${1.25 - .25 * P(lt, 0, .9)})`, { letterSpacing: `${40 - 28 * P(lt, 0, 1.6)}px` });
+  set("titleSub", win(t, s.start + .8, s.end, .8, .5));
+}
+
+function drawY2008(t, s) {
+  const lt = t - s.start, o = win(t, s.start, s.end, .5, .5);
+  // calendar days 1 -> 24
+  const day = Math.min(24, 1 + Math.floor(23 * clamp((lt - .3) / 7.6)));
+  $("cal").textContent = `12.${String(day).padStart(2, "0")}`;
+  const saved = lt > 8.2;
+  set("cal", o, "", { color: day >= 24 && saved ? "var(--gold)" : "var(--ink)" });
+  set("calSub", o);
+  // cash bar draining, then refilled at 26.4
+  const level = saved ? .08 + .92 * P(lt, 8.2, 1.2) : 1 - .92 * easeIO(clamp((lt - .5) / 7.2));
+  const bx = 560, by = 610, bw = 800, bh = 26;
+  ctx.save(); ctx.globalAlpha = o;
+  ctx.strokeStyle = "rgba(141,135,123,.6)"; ctx.lineWidth = 1.5; ctx.strokeRect(bx, by, bw, bh);
+  const col = saved ? GOLD : (level < .3 ? RED : INK);
+  ctx.shadowColor = `rgba(${col},.9)`; ctx.shadowBlur = 24; ctx.fillStyle = `rgba(${col},.9)`;
+  ctx.fillRect(bx + 3, by + 3, (bw - 6) * level, bh - 6);
+  ctx.restore();
+  if (!saved && level < .3) dot(bx + (bw - 6) * level, by + 13, 4, RED, o * (.5 + .5 * Math.sin(t * 12)), 20);
+  burst(t, s.start + 8.2, W / 2, 623, 200, 21, GOLD, 900, 2.2);
+  set("saved", saved ? o * P(lt, 8.4, .6) : 0, rise(P(lt, 8.4, .8)));
+}
+
+function chapterCard(t, s) {
+  const lt = t - s.start;
+  set("chapNum", win(t, s.start, s.start + 1.1, .25, .35), `scale(${1.15 - .15 * P(lt, 0, .8)})`);
+  set("chapName", win(t, s.start + .1, s.start + 1.1, .3, .35));
+  $("chapNum").textContent = s.chapter; $("chapName").textContent = s.name;
+  return clamp((lt - 1) / .4); // 0 while the card is up, then 1
+}
+
+function drawBattery(t, s) {
+  const lt = t - s.start, o = win(t, s.start + 1, s.end, .5, .5);
+  const cx = W / 2, cy = 470;
+  // phase A: a cylindrical cell, then it splits into raw materials
+  const split = P(t, 34.8, 1.2), toBars = P(t, 38.2, .9), toChart = P(t, 42.2, .8);
+  const aA = o * (1 - toChart);
+  if (aA > 0) {
+    const hw = 70, hh = 190;
+    ctx.save(); ctx.globalAlpha = aA * (1 - split * .85);
+    ctx.shadowColor = `rgba(${GOLD},.8)`; ctx.shadowBlur = 30;
+    ctx.strokeStyle = `rgb(${GOLD})`; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.roundRect(cx - hw - split * 40, cy - hh, hw * 2, hh * 2, 22); ctx.stroke();
+    ctx.fillStyle = `rgba(${GOLD},.12)`; ctx.fill();
+    ctx.fillRect(cx - 24 - split * 40, cy - hh - 14, 48, 14);
+    ctx.restore();
+    text("$ $ $", cx - split * 40, cy + 10, 56, GOLD, aA * (1 - split) * P(t, 31.6, .6), "center", 900);
+    const mats = [["钴", "Co"], ["镍", "Ni"], ["锂", "Li"], ["铝", "Al"], ["碳", "C"], ["铁", "Fe"]];
+    mats.forEach(([zh, sym], i) => {
+      const a = -Math.PI / 2 + i / mats.length * Math.PI * 2, R = 320 * split;
+      const x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R * .75;
+      const ai = aA * split * (1 - toBars * .8);
+      ctx.save(); ctx.globalAlpha = ai; ctx.strokeStyle = `rgba(${GOLD},.7)`; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(x - 55, y - 55, 110, 110, 10); ctx.stroke(); ctx.restore();
+      text(zh, x, y + 8, 44, INK, ai, "center", 700);
+      text(sym, x, y + 40, 18, GOLD, ai);
+    });
+    // phase B: price vs material cost bars
+    if (toBars > 0) {
+      const base = 760, hA = 420 * toBars, hB = 130 * P(t, 39.2, .8);
+      ctx.save(); ctx.globalAlpha = aA * toBars;
+      ctx.fillStyle = `rgba(${INK},.85)`; ctx.fillRect(1320, base - hA, 120, hA);
+      ctx.shadowColor = `rgba(${GOLD},1)`; ctx.shadowBlur = 25; ctx.fillStyle = `rgb(${GOLD})`; ctx.fillRect(1500, base - hB, 120, hB);
+      ctx.restore();
+      text("电池售价", 1380, base + 44, 26, INK, aA * toBars);
+      text("材料成本", 1560, base + 44, 26, GOLD, aA * P(t, 39.2, .8));
+    }
+  }
+  // phase C: BNEF pack-price curve
+  if (toChart > 0) {
+    const data = [[2010,1191],[2011,924],[2012,726],[2013,668],[2014,592],[2015,384],[2016,295],[2017,221],[2018,181],[2019,157],[2020,140],[2021,141],[2022,161],[2023,139]];
+    const X = (y) => 260 + (y - 2010) / 13 * 1000, Y = (v) => 820 - v / 1250 * 560;
+    const a = o * toChart, prog = clamp((t - 42.6) / 4);
+    ctx.save(); ctx.globalAlpha = a * .5; ctx.strokeStyle = "rgba(141,135,123,.5)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(260, 820); ctx.lineTo(1290, 820); ctx.stroke(); ctx.restore();
+    data.forEach(([y]) => { if ((y - 2010) % 2 === 0 || y === 2023) text(String(y), X(y), 858, 20, "141,135,123", a); });
+    const n = prog * (data.length - 1), pts = [];
+    for (let i = 0; i <= Math.floor(n); i++) pts.push([X(data[i][0]), Y(data[i][1])]);
+    if (n < data.length - 1) { const i = Math.floor(n), f = n - i;
+      pts.push([X(data[i][0]) + (X(data[i + 1][0]) - X(data[i][0])) * f, Y(data[i][1]) + (Y(data[i + 1][1]) - Y(data[i][1])) * f]); }
+    glowLine(pts, GOLD, 4, 26, a);
+    pts.forEach(([x, y], i) => i < data.length && dot(x, y, 4, INK, a));
+    if (pts.length) dot(...pts[pts.length - 1], 7, INK, a, 30);
+    text("$1,191 / kWh", X(2010) + 10, Y(1191) - 26, 26, INK, a * P(t, 42.6, .5), "left");
+    text("$139", X(2023), Y(139) - 30, 40, GOLD, a * P(t, 46.6, .5), "center", 900);
+    text("锂离子电池包均价 · 数据来源：BloombergNEF", 260, 920, 18, "120,112,98", a, "left");
+    set("drop", a * P(t, 47.6, .6), `scale(${1.2 - .2 * P(t, 47.6, .6)})`);
+  } else set("drop", 0);
+}
+
+function drawOTA(t, s) {
+  const lt = t - s.start, o = win(t, s.start + 1, s.end, .5, .5);
+  const upd = P(t, 57.0, 1.2), cx = W / 2, cy = 440;
+  // aging: grey car + falling dust; updating: gold car + data rain
+  const grey = 1 - upd;
+  if (grey > 0) {
+    drawCar(cx, cy, 1.9, .8 * grey * o, .06 * grey * o, "170,164,152", 0, P(t, 53.0, 1.6));
+    const r = rng(31);
+    for (let i = 0; i < 80; i++) { const x = cx - 560 + r() * 1120, sp = 30 + r() * 50, y = (r() * 500 + (lt - .5) * sp) % 520 + 180;
+      dot(x, y, 1.2, "170,164,152", o * grey * .5 * P(t, 54.5, 1)); }
+  }
+  if (upd > 0) {
+    const r = rng(41);
+    for (let i = 0; i < 120; i++) { const x = cx - 600 + r() * 1200, sp = 260 + r() * 360, y = ((t * sp + r() * 900) % 700) - 100;
+      if (y < cy + 60) dot(x, y, 1.6, GOLD, o * upd * (.3 + .5 * r()), 6); }
+    drawCar(cx, cy, 1.9, o * upd, .12 * o * upd, GOLD, 30 * upd);
+    const bp = clamp((t - 57.3) / 4);
+    ctx.save(); ctx.globalAlpha = o * upd; ctx.strokeStyle = "rgba(141,135,123,.6)"; ctx.strokeRect(cx - 300, 600, 600, 6);
+    ctx.fillStyle = `rgb(${GOLD})`; ctx.shadowColor = `rgba(${GOLD},1)`; ctx.shadowBlur = 16; ctx.fillRect(cx - 300, 600, 600 * bp, 6); ctx.restore();
+    $("otaTag").textContent = bp < 1 ? `正在更新  ${Math.floor(bp * 100)}%` : "更新完成";
+    set("otaTag", o * upd);
+  } else set("otaTag", 0);
+  const c = P(t, 61.8, .8);
+  set("chips", o * c, rise(c));
+  [...$("chips").children].forEach((n, i) => { const k = P(t, 61.8 + i * .45, .5); n.style.opacity = k; n.style.transform = `translateY(${(1 - k) * 20}px)`; });
+}
+
+function drawVertical(t, s) {
+  const lt = t - s.start, o = win(t, s.start + 1, s.end, .5, .5);
+  const cx = W / 2, cy = 470;
+  const hub = 1 - P(t, 75.0, .8);
+  const nodes = ["电池", "电机", "芯片", "软件", "直营", "超充"];
+  if (hub > 0) {
+    const a0 = o * hub;
+    dot(cx, cy, 70, "30,24,14", a0);
+    ctx.save(); ctx.globalAlpha = a0; ctx.strokeStyle = `rgb(${GOLD})`; ctx.lineWidth = 2; ctx.shadowColor = `rgba(${GOLD},1)`; ctx.shadowBlur = 25;
+    ctx.beginPath(); ctx.arc(cx, cy, 70, 0, 7); ctx.stroke(); ctx.restore();
+    text("T", cx, cy + 24, 70, GOLD, a0, "center", 900);
+    nodes.forEach((n, i) => {
+      const a = -Math.PI / 2 + i / 6 * Math.PI * 2, R = 300;
+      const x = cx + Math.cos(a) * R * 1.25, y = cy + Math.sin(a) * R;
+      const k = P(t, 67.8 + i * .5, .6), hi = (n === "直营" && t > 71.8) ? 1 : 0;
+      glowLine([[cx + Math.cos(a) * 75, cy + Math.sin(a) * 75], [cx + Math.cos(a) * (75 + (R * 1.1 - 75) * k), cy + Math.sin(a) * (75 + (R * .9 - 75) * k)]], GOLD, 1.5, 10, a0 * .7);
+      dot(x, y, 58, "24,20,13", a0 * k);
+      ctx.save(); ctx.globalAlpha = a0 * k; ctx.strokeStyle = hi ? `rgb(${RED})` : `rgba(${GOLD},.8)`; ctx.lineWidth = hi ? 3 : 1.5;
+      ctx.beginPath(); ctx.arc(x, y, 58, 0, 7); ctx.stroke(); ctx.restore();
+      text(n, x, y + 12, 34, hi ? RED : INK, a0 * k, "center", 700);
+      // pulse travelling inward
+      const u = ((t * .6 + i / 6) % 1);
+      dot(x + (cx - x) * u, y + (cy - y) * u, 3, GOLD, a0 * k * .8, 10);
+    });
+    if (t > 71.8) text("经销商", cx + 520, cy + 320, 30, "141,135,123", a0 * P(t, 72.2, .5), "center", 700);
+    if (t > 72.6) glowLine([[cx + 460, cy + 310], [cx + 460 + 120 * P(t, 72.6, .4), cy + 310]], RED, 3, 10, a0);
+  }
+  // supercharger growth: dots lighting up across a world-ish band
+  const sc = P(t, 75.4, .8) * (1 - P(t, 80.6, .6));
+  if (sc > 0) {
+    const r = rng(77), k = clamp((t - 75.6) / 4.2);
+    for (let i = 0; i < 900; i++) {
+      const lon = r(), lat = r(), on = r() < k;
+      const x = 200 + lon * 1520, y = 620 + (lat - .5) * 380 * (0.6 + .4 * Math.sin(lon * 9 + lat * 4));
+      dot(x, y, on ? 2.4 : 1.2, on ? GOLD : "80,74,64", sc * (on ? .9 : .4), on ? 8 : 0);
+    }
+    const yr = 2012 + Math.floor(13 * k);
+    $("sc").textContent = (Math.floor(70000 * Math.pow(k, 2.2) / 100) * 100).toLocaleString("en-US") + (k >= 1 ? "+" : "");
+    set("sc", sc); set("scSub", sc); $("scSub").textContent = `全球超级充电桩 · ${yr}`;
+  } else { set("sc", 0); set("scSub", 0); }
+  // NACS convergence
+  const nc = P(t, 80.8, .8) * o;
+  if (nc > 0) {
+    const brands = ["福特", "通用", "奔驰", "日产", "丰田"];
+    brands.forEach((b, i) => {
+      const y = 260 + i * 110, k = P(t, 81.2 + i * .35, 1.2);
+      text(b, 420, y + 12, 36, INK, nc, "right", 700);
+      const ex = 1360, ey = 480;
+      const pts = []; for (let j = 0; j <= 40 * k; j++) { const u = j / 40; pts.push([450 + (ex - 450) * u, y + (ey - y) * easeIO(u)]); }
+      glowLine(pts, GOLD, 2, 12, nc * .9);
+    });
+    const kk = P(t, 82.8, .8);
+    ctx.save(); ctx.globalAlpha = nc * kk; ctx.strokeStyle = `rgb(${GOLD})`; ctx.lineWidth = 3; ctx.shadowColor = `rgba(${GOLD},1)`; ctx.shadowBlur = 30;
+    ctx.beginPath(); ctx.roundRect(1370, 400, 220, 160, 80); ctx.stroke(); ctx.restore();
+    text("NACS", 1480, 494, 48, GOLD, nc * kk, "center", 900);
+    text("特斯拉充电接口", 1480, 610, 24, "141,135,123", nc * kk);
+  }
+}
+
+function drawFactory(t, s) {
+  const lt = t - s.start, o = win(t, s.start + 1, s.end, .5, .5);
+  // A: one prototype -> rows of cars
+  const a = o * (1 - P(t, 92.6, .6));
+  if (a > 0) {
+    const m = P(t, 90.4, 1.6);
+    if (m < .05) drawCar(W / 2, 450, 1.3, a, .1 * a, INK, 10);
+    else for (let row = 0; row < 5; row++) for (let col = 0; col < 9; col++) {
+      const i = row * 9 + col, k = clamp(m * 46 - i);
+      drawCar(270 + col * 172, 240 + row * 110, .26, a * k, .15 * a * k, i === 22 ? INK : GOLD, 6);
+    }
+  }
+  // B: 70+ parts -> one casting
+  const b = o * P(t, 92.8, .5) * (1 - P(t, 98.4, .6));
+  if (b > 0) {
+    const r = rng(53), m = easeIO(clamp((t - 94.2) / 2.4));
+    for (let i = 0; i < 72; i++) {
+      const sx = 260 + r() * 1400, sy = 180 + r() * 520, w = 30 + r() * 70, h = 20 + r() * 50, rot = (r() - .5) * 2;
+      const gx = W / 2 - 300 + (i % 12) * 50, gy = 330 + Math.floor(i / 12) * 40;
+      const x = sx + (gx - sx) * m, y = sy + (gy - sy) * m;
+      ctx.save(); ctx.globalAlpha = b * (1 - m * .7); ctx.translate(x, y); ctx.rotate(rot * (1 - m));
+      ctx.strokeStyle = `rgba(${INK},.7)`; ctx.lineWidth = 1.2; ctx.strokeRect(-w / 2 * (1 - m * .5), -h / 2 * (1 - m * .3), w * (1 - m * .5), h * (1 - m * .3)); ctx.restore();
+    }
+    const solid = P(t, 96.4, .6);
+    ctx.save(); ctx.globalAlpha = b * solid; ctx.shadowColor = `rgba(${GOLD},1)`; ctx.shadowBlur = 40;
+    ctx.fillStyle = `rgba(${GOLD},.85)`; ctx.beginPath(); ctx.roundRect(W / 2 - 330, 300, 660, 270, 40); ctx.fill(); ctx.restore();
+    burst(t, 96.4, W / 2, 435, 160, 61, GOLD, 1000, 1.8);
+    const n = Math.round(70 - 69 * clamp((t - 94.2) / 2.2));
+    $("parts").textContent = n > 1 ? `${n} 个零件` : "1 个";
+    set("parts", b);
+  } else set("parts", 0);
+  // C: Shanghai timeline Jan -> Dec 2019, then factory outline
+  const c = o * P(t, 98.6, .5);
+  if (c > 0) {
+    const x0 = 360, x1 = 1560, y = 470, k = clamp((t - 99.2) / 3.4);
+    glowLine([[x0, y], [x1, y]], "90,84,72", 2, 0, c);
+    glowLine([[x0, y], [x0 + (x1 - x0) * k, y]], GOLD, 4, 22, c);
+    for (let m = 0; m < 12; m++) { const x = x0 + (x1 - x0) * m / 11;
+      dot(x, y, m / 11 <= k ? 6 : 4, m / 11 <= k ? GOLD : "90,84,72", c, m / 11 <= k ? 14 : 0);
+      text(`${m + 1}月`, x, y + 50, 22, "141,135,123", c); }
+    text("开工", x0, y - 40, 32, INK, c, "center", 700);
+    text("首批交付", x1, y - 40, 32, GOLD, c * P(t, 102.6, .5), "center", 900);
+    text("2019 · 上海超级工厂", W / 2, 300, 40, INK, c, "center", 700);
+    burst(t, 102.6, x1, y, 120, 71, GOLD, 700, 1.6);
+  }
+}
+
+function drawBrand(t, s) {
+  const lt = t - s.start, o = win(t, s.start + 1, s.end, .5, .5);
+  const z = P(t, 108.4, .7) * (1 - P(t, 112.2, .6));
+  set("zero", o * z, `scale(${1.3 - .3 * P(t, 108.4, .7)})`);
+  set("zeroSub", o * z);
+  // word of mouth network spreading from one node
+  const k = clamp((t - 112.4) / 4.2), a = o * P(t, 112.4, .4);
+  if (a > 0) {
+    const r = rng(91), nodes = [[W / 2, 480, 0]];
+    for (let i = 1; i < 160; i++) { const p = nodes[Math.floor(r() * i)], ang = r() * 7, d = 60 + r() * 90;
+      nodes.push([clamp(p[0] + Math.cos(ang) * d * 1.6, 120, 1800), clamp(p[1] + Math.sin(ang) * d, 140, 820), i, p]); }
+    nodes.forEach(([x, y, i, p]) => { const on = i / 160 <= k; if (!on) return;
+      if (p) glowLine([[p[0], p[1]], [x, y]], GOLD, 1, 6, a * .5);
+      dot(x, y, i === 0 ? 10 : 3, i === 0 ? INK : GOLD, a, 12); });
+  }
+}
+
+const DELIV = [[2012,.26],[2013,2.25],[2014,3.17],[2015,5.06],[2016,7.62],[2017,10.3],[2018,24.5],[2019,36.8],[2020,50.0],[2021,93.6],[2022,131.4],[2023,180.9],[2024,178.9],[2025,163.6]];
+function drawChart(t) {
+  const o = win(t, 118, 144.4, .6, .6);
+  if (o <= 0) return;
+  const X = (i) => 220 + i * 108, base = 800, sc = 520 / 181;
+  glowLine([[180, base], [1740, base]], "90,84,72", 1.5, 0, o);
+  DELIV.forEach(([y, v], i) => {
+    const appear = i < 12 ? 118.4 + Math.pow(i / 11, 1.6) * 8.8 : 136.6 + (i - 12) * .9;
+    const k = P(t, appear, .7), h = v * sc * k;
+    const late = i >= 12, dim = t > 136.4 && !late ? .35 : 1;
+    const col = late ? RED : (i === 11 ? GOLD : INK);
+    ctx.save(); ctx.globalAlpha = o * dim * k;
+    if (i === 11 || late) { ctx.shadowColor = `rgba(${col},1)`; ctx.shadowBlur = 30; }
+    ctx.fillStyle = `rgba(${col},${i === 11 || late ? .95 : .55})`; ctx.fillRect(X(i) - 34, base - h, 68, h); ctx.restore();
+    text(String(y), X(i), base + 40, 20, "141,135,123", o * k * dim);
+    if (k > 0 && (i >= 8 || i === 0)) text(v >= 1 ? `${v.toFixed(v >= 100 ? 0 : 1)}万` : "0.26万", X(i), base - h - 16, 22, col, o * k * dim, "center", 700);
+  });
+  burst(t, 127.2, X(11), base - 180.9 * sc, 220, 81, GOLD, 1200, 2.2);
+  set("x700", o * P(t, 127.2, .5) * (1 - P(t, 136, .5)), `scale(${1.3 - .3 * P(t, 127.2, .5)})`);
+  // 2020: first profitable year
+  const pf = win(t, 129.8, 136, .5, .4);
+  if (pf > 0) {
+    const x = X(8), y = base - 50 * sc - 60;
+    ctx.save(); ctx.globalAlpha = o * pf; ctx.strokeStyle = `rgb(${GOLD})`; ctx.lineWidth = 2; ctx.shadowColor = `rgba(${GOLD},1)`; ctx.shadowBlur = 20;
+    ctx.beginPath(); ctx.arc(X(8), base - 50 * sc / 2, 90 + 6 * Math.sin(t * 4), 0, 7); ctx.stroke(); ctx.restore();
+    text("首次全年盈利", X(8) - 110, base - 50 * sc / 2 - 40, 30, GOLD, o * pf, "right", 900);
+  }
+}
+
+function drawEnding(t, s) {
+  set("bet", win(t, 144.0, s.end, .6, .4), `scale(${1.1 - .1 * P(t, 144, .8)})`);
+  burst(t, 144.0, W / 2, 440, 140, 101, GOLD, 900, 2);
+}
+
+function drawAnswer(t, s) {
+  const lt = t - s.start, o = 1 - P(t, 156.4, 1.4);
+  set("ansTitle", o * P(lt, 0, .6), `scale(${1.15 - .15 * P(lt, 0, .8)})`);
+  burst(t, s.start, W / 2, 170, 200, 111, GOLD, 1200, 2.2);
+  set("ans", o);
+  [...$("ans").children].forEach((n, i) => { const k = P(t, 148.4 + i * .7, .6); n.style.opacity = k; n.style.transform = `translateX(${(1 - k) * -40}px)`; });
+  set("ansEnd", o * P(t, 152.4, .8), rise(P(t, 152.4, .8)));
+}
+
+// ---------- captions & frame ----------
+function capHTML(s) {
+  return s.replace(/【(.+?)】/g, '<b class="gold">$1</b>').replace(/〔(.+?)〕/g, '<b class="red">$1</b>');
+}
+let lastCap = null;
+function renderAt(t) {
+  ctx.clearRect(0, 0, W, H);
+  const s = sceneAt(t);
+  // camera shake on big hits
+  let shake = 0; for (const h of [3.2, 13.6, 127.2]) if (t >= h && t < h + .5) shake = Math.max(shake, (1 - (t - h) / .5) * 14);
+  const r = rng(Math.floor(t * 30));
+  $("stage").style.transform = shake ? `translate(${(r() - .5) * shake}px, ${(r() - .5) * shake}px)` : "";
+  const blackout = t >= 8.4 && t < 8.9;
+  dust(t, blackout ? 0 : (t < 3.2 ? .4 : 1));
+
+  // hide all scene DOM by default; each draw function shows its own
+  document.querySelectorAll(".abs").forEach(n => { n.style.opacity = 0; });
+  const fn = { open: drawOpen, title: drawTitle, y2008: drawY2008, battery: drawBattery, ota: drawOTA,
+    vertical: drawVertical, factory: drawFactory, brand: drawBrand, result: () => {}, ending: drawEnding, answer: drawAnswer }[s.id];
+  if (s.chapter) chapterCard(t, s);
+  fn(t, s);
+  if (s.id === "result" || s.id === "ending") drawChart(t);
+
+  // corner label
+  const corner = $("corner");
+  const label = s.chapter ? [s.chapter, s.name] : s.year ? [s.year, ""] : null;
+  const cOp = label ? win(t, s.start + (s.chapter ? 1.1 : .3), s.end, .5, .4) : 0;
+  corner.style.opacity = cOp;
+  if (label) { corner.querySelector(".n").textContent = label[0]; corner.querySelector(".s").textContent = label[1]; }
+
+  // caption
+  const c = S.captions.find(([a, b]) => t >= a && t < b);
+  const cap = $("cap");
+  if (c) {
+    if (lastCap !== c) { cap.innerHTML = capHTML(c[2]); lastCap = c; }
+    const k = win(t, c[0], c[1], .35, .3);
+    cap.style.opacity = k; cap.style.filter = `blur(${(1 - k) * 6}px)`; cap.style.transform = rise(k, 12);
+  } else cap.style.opacity = 0;
+
+  // white flash on big hits
+  let fl = 0; for (const h of [3.2, 13.6, 127.2, 147.5]) if (t >= h) fl = Math.max(fl, Math.exp(-(t - h) * 7) * (h === 127.2 || h === 147.5 ? .35 : .85));
+  $("flash").style.opacity = fl;
+  $("brand").style.opacity = blackout || t < 3.2 ? 0 : .9;
+}
+window.setup = (story) => {
+  S = story;
+  // fontsource ships CJK glyphs as lazily-loaded unicode-range subsets: touch every string up front
+  const pre = document.createElement("div");
+  pre.style.cssText = "position:absolute;left:0;top:0;width:40px;height:40px;overflow:hidden;opacity:0;pointer-events:none";
+  const canvasText = document.querySelector("script").textContent.match(/["`][^"`]*[\u4e00-\u9fff][^"`]*["`]/g) || [];
+  pre.textContent = S.captions.map(c => c[2]).join("") + canvasText.join("") + "0123456789$,.%+−×/kWh 万月";
+  for (const w of [400, 700, 900]) { const d = pre.cloneNode(true); d.style.fontWeight = w; document.body.appendChild(d); }
+};
+window.renderAt = renderAt;
+</script>
+</body>
+</html>

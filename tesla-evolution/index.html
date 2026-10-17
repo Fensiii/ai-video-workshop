@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>Tesla Evolution</title>
+<style>
+  :root { --red: #e82127; --ink: #f4f5f7; --mute: #8a93a3; --bg: #07090d; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+  body { font-family: "Inter", "WenQuanYi Zen Hei", sans-serif; color: var(--ink); }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden;
+    background: radial-gradient(1200px 700px at 65% 45%, #16202e 0%, #0b0f16 55%, var(--bg) 100%); }
+  #grid { position: absolute; inset: -80px; opacity: .35;
+    background-image: linear-gradient(#1b2433 1px, transparent 1px), linear-gradient(90deg, #1b2433 1px, transparent 1px);
+    background-size: 80px 80px; }
+  #brand { position: absolute; left: 80px; top: 56px; font-size: 26px; letter-spacing: 8px; color: var(--mute); font-weight: 600; }
+  #brand b { color: var(--red); font-weight: 800; }
+  .scene { position: absolute; inset: 0; opacity: 0; }
+  .year { position: absolute; left: 110px; top: 190px; font-size: 200px; font-weight: 900; line-height: 1;
+    color: transparent; -webkit-text-stroke: 3px rgba(232,33,39,.85); letter-spacing: -4px; font-family: "Inter Display", "Inter"; }
+  .title { position: absolute; left: 116px; top: 410px; font-size: 104px; font-weight: 800; letter-spacing: -1px; white-space: nowrap; }
+  .sub { position: absolute; left: 120px; top: 545px; font-size: 40px; color: var(--mute); }
+  .bar { position: absolute; left: 120px; top: 395px; height: 6px; width: 120px; background: var(--red); transform-origin: left; }
+  .car { position: absolute; left: 760px; top: 140px; width: 1100px; height: 367px; overflow: visible; }
+  .stats { position: absolute; left: 820px; top: 585px; display: flex; gap: 28px; }
+  .stat { width: 320px; padding: 22px 28px; border-radius: 14px; background: rgba(20,28,40,.78);
+    border: 1px solid #263246; border-top: 4px solid var(--red); }
+  .stat .k { font-size: 24px; color: var(--mute); }
+  .stat .v { font-size: 44px; font-weight: 800; margin-top: 6px; white-space: nowrap; }
+  .badge { position: absolute; padding: 10px 24px; border-radius: 40px; font-size: 32px; font-weight: 700;
+    background: var(--red); color: #fff; box-shadow: 0 8px 30px rgba(232,33,39,.45); opacity: 0; white-space: nowrap; }
+  #subtitle { position: absolute; left: 50%; bottom: 118px; transform: translateX(-50%); width: max-content; max-width: 1640px;
+    font-size: 42px; line-height: 1.45; text-align: center; padding: 10px 30px; border-radius: 10px;
+    background: rgba(0,0,0,.55); text-shadow: 0 2px 6px #000; }
+  #timeline { position: absolute; left: 120px; right: 120px; bottom: 50px; height: 40px; }
+  #timeline .track { position: absolute; left: 0; right: 0; top: 10px; height: 3px; background: #273142; }
+  #timeline .fill { position: absolute; left: 0; top: 10px; height: 3px; background: var(--red); }
+  #timeline .dot { position: absolute; top: 4px; width: 15px; height: 15px; margin-left: -7px; border-radius: 50%;
+    background: #273142; border: 2px solid #3a475c; }
+  #timeline .dot.on { background: var(--red); border-color: #ff6b70; }
+  #timeline .lbl { position: absolute; top: 24px; font-size: 18px; color: var(--mute); transform: translateX(-50%); white-space: nowrap; }
+  #timeline .lbl.cur { color: var(--ink); font-weight: 700; }
+  /* intro / outro */
+  .center { position: absolute; left: 0; right: 0; text-align: center; }
+  .plan { position: absolute; top: 640px; left: 0; right: 0; display: flex; justify-content: center; gap: 40px; align-items: center; }
+  .plan .step { width: 330px; padding: 26px; border-radius: 16px; background: rgba(20,28,40,.85); border: 1px solid #263246;
+    text-align: center; font-size: 38px; font-weight: 700; opacity: 0; }
+  .plan .step small { display: block; font-size: 22px; color: var(--mute); font-weight: 400; margin-bottom: 8px; }
+  .plan .arrow { font-size: 50px; color: var(--red); opacity: 0; }
+  .lineup { position: absolute; left: 90px; right: 90px; top: 300px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 30px; }
+  .lineup .item { width: 400px; text-align: center; opacity: 0; }
+  .lineup .item div { font-size: 26px; font-weight: 700; margin-top: -8px; }
+  .lineup .item span { color: var(--red); font-size: 22px; margin-right: 10px; }
+  .lineup .hl, .lineup .falcon { display: none; }
+  .stamp { position: absolute; font-size: 64px; font-weight: 900; color: var(--red); border: 6px solid var(--red);
+    padding: 6px 30px; border-radius: 12px; transform: rotate(-12deg); opacity: 0; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid"></div>
+  <div id="brand"><b>T</b>ESLA · 车型进化史</div>
+  <div id="scenes"></div>
+  <div id="subtitle"></div>
+  <div id="timeline"><div class="track"></div><div class="fill"></div></div>
+</div>
+<script>
+// ---------- car silhouettes (viewBox 0 0 600 200, front faces left) ----------
+const CARS = {
+  roadster:  { smooth: true, pts: [[18,140],[22,124],[50,117],[140,110],[205,96],[245,80],[290,76],[330,80],[365,96],[460,104],[540,108],[574,118],[580,140]],
+               wheels: [[112,146,27],[472,146,27]], glass: [[215,98],[250,83],[290,80],[325,84],[350,98]] },
+  models:    { smooth: true, pts: [[8,140],[12,120],[40,110],[150,100],[205,82],[262,62],[330,58],[405,66],[480,90],[560,100],[588,112],[592,140]],
+               wheels: [[112,146,30],[478,146,30]], glass: [[214,86],[266,66],[330,63],[400,70],[462,92]] },
+  modelx:    { smooth: true, pts: [[8,140],[12,116],[40,104],[140,94],[198,70],[258,46],[350,42],[440,50],[520,76],[575,88],[592,106],[594,140]],
+               wheels: [[115,146,32],[480,146,32]], glass: [[208,72],[262,50],[350,47],[436,55],[500,80]], falcon: true },
+  model3:    { smooth: true, pts: [[28,140],[32,122],[60,113],[160,104],[215,84],[268,66],[330,62],[395,72],[455,92],[540,102],[566,114],[568,140]],
+               wheels: [[128,146,29],[464,146,29]], glass: [[224,88],[270,70],[330,67],[392,76],[440,94]] },
+  modely:    { smooth: true, pts: [[28,140],[32,118],[60,107],[160,98],[215,76],[272,55],[345,52],[420,60],[480,84],[545,96],[568,110],[570,140]],
+               wheels: [[130,146,31],[466,146,31]], glass: [[224,80],[275,59],[345,57],[416,64],[462,86]] },
+  semi:      { smooth: false, pts: [[18,150],[19,100],[24,78],[36,58],[54,42],[76,30],[104,22],[140,18],[232,20],[248,36],[252,104],[470,104],[474,150]],
+               wheels: [[96,152,28],[330,152,28],[430,152,28]], glass: [[38,62],[56,46],[78,35],[150,28],[150,62]] },
+  cybertruck:{ smooth: false, pts: [[8,140],[10,108],[24,98],[300,40],[592,88],[594,140]],
+               wheels: [[118,146,33],[474,146,33]], glass: [[170,74],[300,46],[400,62],[400,74]] },
+  cybercab:  { smooth: true, pts: [[58,140],[60,122],[88,113],[190,98],[250,72],[320,60],[400,66],[470,92],[520,106],[540,122],[542,140]],
+               wheels: [[150,146,28],[452,146,28]], glass: [[258,74],[320,64],[396,70],[452,92]] },
+};
+// raw profiles are drawn long and low; normalise to realistic proportions
+const SX = .8, SY = 1.2, SR = 1.2;
+for (const c of Object.values(CARS)) {
+  const cy = c.wheels[0][1], m = ([x, y]) => [300 + (x - 300) * SX, cy - (cy - y) * SY];
+  c.map = m; c.pts = c.pts.map(m); c.glass = c.glass.map(m);
+  c.wheels = c.wheels.map(([x, y, r]) => [m([x, y])[0], y, r * SR]);
+}
+const CAR_NAMES = { roadster: "Roadster", models: "Model S", modelx: "Model X", model3: "Model 3", modely: "Model Y",
+  semi: "Semi", cybertruck: "Cybertruck", cybercab: "Cybercab" };
+const CAR_YEARS = { roadster: 2008, models: 2012, modelx: 2015, model3: 2017, modely: 2020, semi: 2022, cybertruck: 2023, cybercab: 2026 };
+
+function curve(p, smooth) {
+  let d = `M${p[0][0]},${p[0][1]}`;
+  if (!smooth) return d + p.slice(1).map(q => `L${q[0]},${q[1]}`).join("");
+  for (let i = 0; i < p.length - 1; i++) {   // Catmull-Rom -> cubic Bezier
+    const a = p[Math.max(i - 1, 0)], b = p[i], c = p[i + 1], e = p[Math.min(i + 2, p.length - 1)];
+    d += `C${b[0] + (c[0] - a[0]) / 6},${b[1] + (c[1] - a[1]) / 6} ${c[0] - (e[0] - b[0]) / 6},${c[1] - (e[1] - b[1]) / 6} ${c[0]},${c[1]}`;
+  }
+  return d;
+}
+function bodyPath(car) {
+  const p = car.pts, cy = car.wheels[0][1], last = p[p.length - 1];
+  let d = curve(p, car.smooth) + `L${last[0]},${cy}`;
+  [...car.wheels].sort((a, b) => b[0] - a[0]).forEach(([x, y, r]) => {
+    const R = r + 6; d += `L${x + R},${cy}A${R},${R} 0 0 0 ${x - R},${cy}`;
+  });
+  return d + `L${p[0][0]},${cy}Z`;
+}
+let uid = 0;
+function carSVG(key) {
+  const c = CARS[key], id = "g" + (uid++);
+  const wheels = c.wheels.map(([x, y, r]) => `
+    <g class="wheel" data-x="${x}" data-y="${y}">
+      <circle cx="${x}" cy="${y}" r="${r}" fill="#0c0f14" stroke="#4a5568" stroke-width="2"/>
+      <g class="rim"><circle cx="${x}" cy="${y}" r="${r * .62}" fill="none" stroke="#9aa6b8" stroke-width="2.5"/>
+      ${[0, 72, 144, 216, 288].map(a => `<line x1="${x}" y1="${y}" x2="${x + r * .6 * Math.cos(a * Math.PI / 180)}" y2="${y + r * .6 * Math.sin(a * Math.PI / 180)}" stroke="#9aa6b8" stroke-width="3"/>`).join("")}
+      <circle cx="${x}" cy="${y}" r="4" fill="#cfd6e0"/></g>
+    </g>`).join("");
+  const door = c.falcon ? `<path class="falcon" d="M${[[285,50],[395,48],[398,98],[292,100]].map(c.map).join("L")}Z" fill="url(#${id}b)" stroke="#e8edf5" stroke-width="2"/>` : "";
+  const ground = Math.max(...c.wheels.map(w => w[1] + w[2]));
+  return `<svg viewBox="0 0 600 200" class="carsvg" data-key="${key}">
+    <defs>
+      <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d6b80"/><stop offset=".55" stop-color="#2a3446"/><stop offset="1" stop-color="#141a24"/></linearGradient>
+      <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9fd3ff" stop-opacity=".55"/><stop offset="1" stop-color="#22324a" stop-opacity=".8"/></linearGradient>
+      <radialGradient id="${id}s"><stop offset="0" stop-color="#000" stop-opacity=".7"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    </defs>
+    <ellipse cx="300" cy="${ground + 2}" rx="300" ry="12" fill="url(#${id}s)"/>
+    <path class="body" d="${bodyPath(c)}" fill="url(#${id}b)" stroke="#e8edf5" stroke-width="2.2" stroke-linejoin="round"/>
+    <path class="glass" d="${curve(c.glass, c.smooth)}Z" fill="url(#${id}g)" stroke="#bcd9f5" stroke-width="1"/>
+    <path class="hl" d="${curve(c.pts.slice(1, -1), c.smooth)}" fill="none" stroke="#e82127" stroke-width="2.5"/>
+    ${door}${wheels}
+  </svg>`;
+}
+
+// ---------- helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
+const prog = (t, a, d) => ease((t - a) / d);
+const el = (html) => { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstChild; };
+
+let TL, built = [];
+
+function buildScene(s, i) {
+  const root = el(`<div class="scene"></div>`);
+  const L = s.lines;
+  if (s.id === "intro") {
+    root.innerHTML = `
+      <div class="center" style="top:250px;font-size:150px;font-weight:900;letter-spacing:4px" data-k="ttl">${s.title}</div>
+      <div class="center" style="top:440px;font-size:46px;color:var(--mute)" data-k="st">${s.sub} · 2008 — 2026</div>
+      <div class="plan" data-k="plan">
+        <div class="step"><small>第一步</small>造跑车</div><div class="arrow">→</div>
+        <div class="step"><small>第二步</small>造更便宜的车</div><div class="arrow">→</div>
+        <div class="step"><small>第三步</small>造更加便宜的车</div>
+      </div>`;
+    root.update = (t) => {
+      const lt = t - s.start;
+      const planT = L[2].start - s.start;
+      const shrink = prog(lt, planT - .3, .8);
+      for (const k of ["ttl", "st"]) {
+        const n = root.querySelector(`[data-k=${k}]`);
+        n.style.opacity = prog(lt, k === "ttl" ? .1 : .5, .8);
+        n.style.transform = `translateY(${(1 - prog(lt, .1, 1)) * 40 - shrink * 120}px)`;
+      }
+      [...root.querySelectorAll(".plan > *")].forEach((n, j) => {
+        const a = planT + j * 0.9;
+        n.style.opacity = prog(lt, a, .5);
+        n.style.transform = `translateY(${(1 - prog(lt, a, .6)) * 30}px)`;
+      });
+    };
+  } else if (s.id === "outro") {
+    const keys = Object.keys(CARS);
+    root.innerHTML = `
+      <div class="lineup" data-k="sx" style="top:270px">${["models", "modelx"].map(k => `<div class="item" style="width:620px;opacity:1">${carSVG(k)}<div>${CAR_NAMES[k]}</div></div>`).join("")}</div>
+      <div class="stamp" style="left:770px;top:610px" data-k="stamp">2012 — 2026 · 谢幕</div>
+      <div class="lineup" data-k="all" style="top:330px">${keys.map(k => `<div class="item">${carSVG(k)}<div><span>${CAR_YEARS[k]}</span>${CAR_NAMES[k]}</div></div>`).join("")}</div>
+      <div class="center" style="top:150px;font-size:96px;font-weight:900" data-k="ttl">${s.title}</div>`;
+    root.update = (t) => {
+      const lt = t - s.start, t1 = L[1].start - s.start, t2 = L[2].start - s.start;
+      const sx = root.querySelector("[data-k=sx]");
+      sx.style.opacity = prog(lt, .2, .8) * (1 - prog(lt, t1 - .6, .6));
+      sx.style.filter = `grayscale(${prog(lt, 3, 1.5)})`;
+      const st = root.querySelector("[data-k=stamp]");
+      st.style.opacity = prog(lt, 3, .3) * (1 - prog(lt, t1 - .6, .6));
+      st.style.transform = `rotate(-12deg) scale(${1.6 - .6 * prog(lt, 3, .35)})`;
+      const all = root.querySelector("[data-k=all]");
+      all.style.transform = `translateY(${-prog(lt, t2 - .4, 1) * 40}px)`;
+      [...all.children].forEach((n, j) => {
+        n.style.opacity = prog(lt, t1 + j * .45, .5);
+        n.style.transform = `translateX(${(1 - prog(lt, t1 + j * .45, .7)) * 80}px)`;
+        spinWheels(n, lt, t1 + j * .45);
+      });
+      const ttl = root.querySelector("[data-k=ttl]");
+      ttl.style.opacity = prog(lt, t1 + .2, 1);
+    };
+  } else {
+    const cars = s.cars || [s.car];
+    const two = s.id === "refresh";
+    root.innerHTML = `
+      <div class="year" data-k="year" style="${s.year.length > 4 ? "font-size:120px;top:250px" : ""}">${s.year}</div>
+      <div class="bar" data-k="bar"></div>
+      <div class="title" data-k="title">${s.title}</div>
+      <div class="sub" data-k="sub">${s.sub}</div>
+      <div data-k="cars">${(two ? ["model3", "modely"] : cars).map((k, j) =>
+        `<div class="car" style="${two ? `width:540px;height:180px;top:200px;left:${790 + j * 560}px` : ""}">${carSVG(k)}${two ? `<div style="text-align:center;font-size:30px;font-weight:700">${CAR_NAMES[k]} 焕新版</div>` : ""}</div>`).join("")}</div>
+      <div class="stats">${(s.stats || []).map(([k, v]) => `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>
+      ${(s.badges || []).map(b => `<div class="badge" data-line="${b.line}" style="left:${b.x}px;top:${b.y}px">${b.text}</div>`).join("")}`;
+    root.update = (t) => {
+      const lt = t - s.start;
+      const yr = root.querySelector("[data-k=year]");
+      yr.style.opacity = prog(lt, 0, .8);
+      yr.style.transform = `translateX(${(1 - prog(lt, 0, 1.2)) * -60}px)`;
+      root.querySelector("[data-k=bar]").style.transform = `scaleX(${prog(lt, .3, .8)})`;
+      for (const [k, a] of [["title", .35], ["sub", .7]]) {
+        const n = root.querySelector(`[data-k=${k}]`);
+        n.style.opacity = prog(lt, a, .7);
+        n.style.transform = `translateY(${(1 - prog(lt, a, .8)) * 30}px)`;
+      }
+      root.querySelectorAll(".car").forEach((c, j) => animateCar(c, lt, .2 + j * .5));
+      root.querySelectorAll(".stat").forEach((n, j) => {
+        const a = 1.6 + j * .45;
+        n.style.opacity = prog(lt, a, .5);
+        n.style.transform = `translateY(${(1 - prog(lt, a, .6)) * 40}px)`;
+      });
+      root.querySelectorAll(".badge").forEach(n => {
+        const a = L[+n.dataset.line].start - s.start + .3;
+        n.style.opacity = prog(lt, a, .4);
+        n.style.transform = `scale(${.6 + .4 * prog(lt, a, .4)})`;
+      });
+    };
+  }
+  return root;
+}
+
+function spinWheels(node, lt, a) {
+  // wheels roll while the car slides in, then settle
+  const travel = (1 - prog(lt, a, 1.6));
+  node.querySelectorAll(".wheel").forEach(w => {
+    const ang = travel * 540;
+    w.querySelector(".rim").setAttribute("transform", `rotate(${-ang} ${w.dataset.x} ${w.dataset.y})`);
+  });
+}
+
+function animateCar(c, lt, a) {
+  const svg = c.querySelector("svg");
+  const body = svg.querySelector(".body");
+  if (!body._len) { body._len = body.getTotalLength(); body.style.strokeDasharray = body._len; }
+  body.style.strokeDashoffset = body._len * (1 - prog(lt, a, 1.4));
+  body.style.fillOpacity = prog(lt, a + .9, .9);
+  svg.querySelector(".glass").style.opacity = prog(lt, a + 1.2, .8);
+  const hl = svg.querySelector(".hl");
+  if (!hl._len) { hl._len = hl.getTotalLength(); hl.style.strokeDasharray = `${hl._len * .25} ${hl._len}`; }
+  hl.style.strokeDashoffset = hl._len * 1.25 - hl._len * 1.5 * clamp((lt - a - 1.8) / 1.6);
+  hl.style.opacity = clamp((lt - a - 1.8) / .2) * (1 - clamp((lt - a - 3.2) / .3));
+  svg.querySelectorAll(".wheel").forEach(w => w.style.opacity = prog(lt, a + .4, .6));
+  const door = svg.querySelector(".falcon");
+  if (door) {
+    const open = prog(lt, a + 3.5, 1.8) * (1 - prog(lt, a + 9, 1.6));
+    const [hx, hy] = CARS.modelx.map([330, 44]);
+    door.style.opacity = open > .01 ? 1 : 0;
+    door.setAttribute("transform", `rotate(${-62 * open} ${hx} ${hy})`);
+  }
+  spinWheels(c, lt, a);
+  const slide = (1 - prog(lt, a, 1.6)) * 260;
+  const bob = Math.sin(lt * 1.6) * 3;
+  c.style.transform = `translate(${slide}px, ${bob}px)`;
+  c.style.opacity = prog(lt, a, .5);
+}
+
+function setup(tl) {
+  TL = tl;
+  const sc = document.getElementById("scenes");
+  const tlEl = document.getElementById("timeline");
+  const marks = tl.scenes.filter(s => s.car || s.id === "intro" || s.id === "outro");
+  tl.scenes.forEach((s, i) => { const n = buildScene(s, i); sc.appendChild(n); built.push(n); });
+  marks.forEach((s, i) => {
+    const pos = (s.start / tl.duration) * 100;
+    tlEl.insertAdjacentHTML("beforeend",
+      `<div class="dot" style="left:${pos}%" data-s="${s.start}"></div><div class="lbl" style="left:${pos}%" data-id="${s.id}">${s.year.split("–")[0]}</div>`);
+  });
+}
+
+function renderAt(t) {
+  document.getElementById("grid").style.transform = `translateX(${-(t * 12) % 80}px)`;
+  let current = null;
+  TL.scenes.forEach((s, i) => {
+    const n = built[i];
+    const fadeIn = prog(t, s.start - .25, .6);
+    const fadeOut = 1 - prog(t, s.end - .45, .45);
+    const vis = (i === TL.scenes.length - 1) ? fadeIn : Math.min(fadeIn, fadeOut);
+    n.style.opacity = vis;
+    n.style.display = vis > 0.001 ? "block" : "none";
+    if (vis > 0.001) n.update(t);
+    if (t >= s.start - .25 && t < s.end) current = s;
+  });
+  // subtitle
+  const sub = document.getElementById("subtitle");
+  let line = null;
+  for (const s of TL.scenes) for (const l of s.lines) if (t >= l.start - .1 && t < l.end + .25) line = l;
+  sub.textContent = line ? line.text : "";
+  sub.style.opacity = line ? 1 : 0;
+  // timeline
+  document.querySelector("#timeline .fill").style.width = `${(t / TL.duration) * 100}%`;
+  document.querySelectorAll("#timeline .dot").forEach(d => d.classList.toggle("on", t >= +d.dataset.s));
+  document.querySelectorAll("#timeline .lbl").forEach(d => d.classList.toggle("cur", current && d.dataset.id === current.id));
+}
+window.setup = setup; window.renderAt = renderAt;
+</script>
+</body>
+</html>

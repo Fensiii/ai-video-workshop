@@ -1,0 +1,52 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 2
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Lyric,WenQuanYi Zen Hei,78,&H00FFFFFF,&H000000FF,&H00301E14,&H80000000,0,0,0,0,100,100,4,0,1,4,2,2,60,60,60,1
+Style: Title,WenQuanYi Zen Hei,38,&H00FFFFFF,&H000000FF,&H00301E14,&H80000000,0,0,0,0,100,100,2,0,1,2,1,7,60,60,50,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.30,0:00:03.40,Title,,0,0,0,,{\fad(400,400)}《幻昼》×《短发女孩》×《take me hand》
+Dialogue: 0,0:00:03.50,0:00:05.60,Lyric,,0,0,0,,{\fad(120,120)}她很厌倦世俗 所以她最讨厌烟酒味
+Dialogue: 0,0:00:05.70,0:00:06.90,Lyric,,0,0,0,,{\fad(120,120)}我最难过的是看到
+Dialogue: 0,0:00:06.90,0:00:08.10,Lyric,,0,0,0,,{\fad(120,120)}她为了别人掉眼泪
+Dialogue: 0,0:00:08.10,0:00:09.30,Lyric,,0,0,0,,{\fad(120,120)}她眼眶有了黑眼圈
+Dialogue: 0,0:00:09.30,0:00:10.50,Lyric,,0,0,0,,{\fad(120,120)}今晚能不能早点睡
+Dialogue: 0,0:00:10.50,0:00:11.50,Lyric,,0,0,0,,{\fad(120,120)}只要她能开心
+Dialogue: 0,0:00:11.50,0:00:12.70,Lyric,,0,0,0,,{\fad(120,120)}其他的事全都无所谓
+Dialogue: 0,0:00:12.70,0:00:13.90,Lyric,,0,0,0,,{\fad(120,120)}她留短发 淡的妆
+Dialogue: 0,0:00:13.90,0:00:15.10,Lyric,,0,0,0,,{\fad(120,120)}身上茉莉花的香
+Dialogue: 0,0:00:15.10,0:00:16.30,Lyric,,0,0,0,,{\fad(120,120)}她总喜欢嘴角上扬
+Dialogue: 0,0:00:16.30,0:00:17.50,Lyric,,0,0,0,,{\fad(120,120)}她是我的白月光
+Dialogue: 0,0:00:17.50,0:00:18.70,Lyric,,0,0,0,,{\fad(120,120)}她总是盲目付出真心
+Dialogue: 0,0:00:18.70,0:00:19.90,Lyric,,0,0,0,,{\fad(120,120)}在感情中受了伤
+Dialogue: 0,0:00:19.90,0:00:21.10,Lyric,,0,0,0,,{\fad(120,120)}她流过太多眼泪
+Dialogue: 0,0:00:21.10,0:00:22.30,Lyric,,0,0,0,,{\fad(120,120)}凝结在眼角冻了霜
+Dialogue: 0,0:00:22.30,0:00:23.30,Lyric,,0,0,0,,{\fad(120,120)}她很厌倦世俗所以
+Dialogue: 0,0:00:23.30,0:00:24.50,Lyric,,0,0,0,,{\fad(120,120)}她最讨厌烟酒味
+Dialogue: 0,0:00:24.50,0:00:25.70,Lyric,,0,0,0,,{\fad(120,120)}我最难过的是看到
+Dialogue: 0,0:00:25.70,0:00:26.90,Lyric,,0,0,0,,{\fad(120,120)}她为了别人流眼泪
+Dialogue: 0,0:00:26.90,0:00:27.90,Lyric,,0,0,0,,{\fad(120,120)}她眼眶有了黑眼圈
+Dialogue: 0,0:00:27.90,0:00:29.10,Lyric,,0,0,0,,{\fad(120,120)}今晚能不能早点睡
+Dialogue: 0,0:00:29.10,0:00:29.90,Lyric,,0,0,0,,{\fad(120,120)}只要她能开心
+Dialogue: 0,0:00:29.90,0:00:31.50,Lyric,,0,0,0,,{\fad(120,120)}其他的事情全都无所谓
+Dialogue: 0,0:00:31.50,0:00:33.20,Lyric,,0,0,0,,{\fad(120,120)}她从不在乎别人的眼光
+Dialogue: 0,0:00:33.20,0:00:34.00,Lyric,,0,0,0,,{\fad(120,120)}独自内耗或感伤
+Dialogue: 0,0:00:34.00,0:00:35.30,Lyric,,0,0,0,,{\fad(120,120)}但她总会被细节感动
+Dialogue: 0,0:00:35.50,0:00:36.50,Lyric,,0,0,0,,{\fad(120,120)}从而哭红了眼妆
+Dialogue: 0,0:00:36.50,0:00:37.70,Lyric,,0,0,0,,{\fad(120,120)}经常带着AirPods
+Dialogue: 0,0:00:37.70,0:00:38.90,Lyric,,0,0,0,,{\fad(120,120)}是听歌白天到晚上
+Dialogue: 0,0:00:38.90,0:00:40.10,Lyric,,0,0,0,,{\fad(120,120)}她的脸让我恍惚
+Dialogue: 0,0:00:40.10,0:00:41.20,Lyric,,0,0,0,,{\fad(120,120)}那是镜子的反光
+Dialogue: 0,0:00:41.30,0:00:43.10,Lyric,,0,0,0,,{\fad(120,120)}像虚度光阴把珍贵的青春挥霍
+Dialogue: 0,0:00:43.10,0:00:44.30,Lyric,,0,0,0,,{\fad(120,120)}就像是开了金花
+Dialogue: 0,0:00:44.30,0:00:45.50,Lyric,,0,0,0,,{\fad(120,120)}当她从我面前经过
+Dialogue: 0,0:00:45.50,0:00:46.50,Lyric,,0,0,0,,{\fad(120,120)}微风吹起的裙摆
+Dialogue: 0,0:00:46.50,0:00:47.90,Lyric,,0,0,0,,{\fad(120,120)}树叶像雨点般飘落
+Dialogue: 0,0:00:47.90,0:00:49.10,Lyric,,0,0,0,,{\fad(120,120)}她是个怎样的女孩
+Dialogue: 0,0:00:49.10,0:00:50.60,Lyric,,0,0,0,,{\fad(120,120)}她是什么星座

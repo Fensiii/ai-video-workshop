@@ -408,15 +408,15 @@ function drawFactory(t, s) {
     const r = rng(53), m = easeIO(clamp((t - 94.2) / 2.4));
     for (let i = 0; i < 72; i++) {
       const sx = 260 + r() * 1400, sy = 180 + r() * 520, w = 30 + r() * 70, h = 20 + r() * 50, rot = (r() - .5) * 2;
-      const gx = W / 2 - 300 + (i % 12) * 50, gy = 330 + Math.floor(i / 12) * 40;
+      const gx = W / 2 - 300 + (i % 12) * 50, gy = 370 + Math.floor(i / 12) * 40;
       const x = sx + (gx - sx) * m, y = sy + (gy - sy) * m;
       ctx.save(); ctx.globalAlpha = b * (1 - m * .7); ctx.translate(x, y); ctx.rotate(rot * (1 - m));
       ctx.strokeStyle = `rgba(${INK},.7)`; ctx.lineWidth = 1.2; ctx.strokeRect(-w / 2 * (1 - m * .5), -h / 2 * (1 - m * .3), w * (1 - m * .5), h * (1 - m * .3)); ctx.restore();
     }
     const solid = P(t, 96.4, .6);
     ctx.save(); ctx.globalAlpha = b * solid; ctx.shadowColor = `rgba(${GOLD},1)`; ctx.shadowBlur = 40;
-    ctx.fillStyle = `rgba(${GOLD},.85)`; ctx.beginPath(); ctx.roundRect(W / 2 - 330, 300, 660, 270, 40); ctx.fill(); ctx.restore();
-    burst(t, 96.4, W / 2, 435, 160, 61, GOLD, 1000, 1.8);
+    ctx.fillStyle = `rgba(${GOLD},.85)`; ctx.beginPath(); ctx.roundRect(W / 2 - 330, 340, 660, 250, 40); ctx.fill(); ctx.restore();
+    burst(t, 96.4, W / 2, 465, 160, 61, GOLD, 1000, 1.8);
     const n = Math.round(70 - 69 * clamp((t - 94.2) / 2.2));
     $("parts").textContent = n > 1 ? `${n} 个零件` : "1 个";
     set("parts", b);

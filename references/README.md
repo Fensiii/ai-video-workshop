@@ -17,6 +17,9 @@
 | `knowledge-explainer/dark-gold/curse-of-knowledge.mp4` | 2:25 | 1024×576 | 知识诅咒：聊天截图 → 1990 斯坦福敲歌实验 → 生活例子 → 方法 |
 | `knowledge-explainer/dark-gold/shape-of-luck.mp4` | 2:10 | 1024×576 | 运气的形状：概率论史 1565–1933，按年份推进 |
 | `knowledge-explainer/dark-gold/shape-of-luck_douyin.mp4` | 2:13 | 1280×720 | 同上的另一版（带抖音水印），节奏和片尾略有不同，可对比两版剪法 |
+| `knowledge-explainer/dark-gold/dopamine-learning.mp4` | 3:40 | 1920×1080 | 多巴胺与学习：大脑线稿 → 刷短视频 vs 学习的回报曲线 → 分章讲方法（PART TWO 章节卡） |
+| `knowledge-explainer/dark-gold/choking-under-pressure.mp4` | 2:32 | 1920×1080 | 关键时刻为什么发挥失常：工作记忆、高尔夫推杆实验，三个方法（方法 1/3…3/3） |
+| `knowledge-explainer/navy-infographic/learning-methods.mp4` | 2:22 | 1920×1080 | 为什么学了 10 小时 80% 白费：深蓝底信息图，错误 01/02 → 方法步骤 |
 | `knowledge-explainer/cartoon-night/stable-marriage.mp4` | 2:26 | 1280×720 | 稳定婚配（盖尔-沙普利算法）：4 男 4 女卡通人物 + 红线连接演示 |
 | `philosophy-minimal/entropy-particles.mp4` | 2:50 | 1024×576 | 熵/混乱：粒子、点阵人像、骰子分布、暗房间 3D 网格，大字金句 |
 | `philosophy-minimal/nihilism-line-art.mp4` | 2:45 | 1024×576 | 虚无主义：白色点线手绘（骆驼、狮子、孩子），黑底极简 |
@@ -43,13 +46,23 @@
 - 极简白色人物剪影、线框飞机/图表，数据用细线图 + 金色标注。
 - 结构：反常识钩子开场 → 历史实验/故事 → 原理解释 → 生活中的例子 → 金句收尾 → 片尾大标题（如“知识诅咒”“运气的形状”）。
 - 适合做法：HTML/Canvas + Playwright（字幕和卡片多），参考 `tesla-success` 项目的 `【】/〔〕` 高亮字幕方案。
+- `dopamine-learning`：同一套语言的长版（3分40秒），多了章节卡（“PART TWO / 让学习带来更多多巴胺”）、
+  左上角大号章节编号“01/02”、红色对比柱状图、计时圆环和打卡勾选进度。
+- `choking-under-pressure`：极简变体——暖棕黑底、衬线大字金句（关键词珊瑚红/金色）、
+  左图右文；线条画只用细金线（钢琴、波形、靶心、小人投篮），方法用“方法 1/3”小标编号。
 
-### 4. 知识科普·卡通夜景风 `knowledge-explainer/cartoon-night/`
+### 4. 知识科普·深蓝信息图风 `knowledge-explainer/navy-infographic/`
+- `learning-methods`：深蓝径向渐变底，左边一个简洁线条图形（漏桶、垃圾桶、泳池、大脑），右边两三行文字，
+  大号百分比数字（80%、10%）用红/金强调；“错误 01/02”大号背景数字做章节；
+  数据用横条对比、学习金字塔，结尾三张方法卡片并排。更像动态 PPT，制作成本最低。
+- 适合做法：HTML + CSS 动画 + Playwright，或 Remotion。
+
+### 5. 知识科普·卡通夜景风 `knowledge-explainer/cartoon-night/`
 - 深蓝夜空 + 月亮 + 银河，Q 版古风人物，左右两列对阵，用红色曲线连线演示算法每一轮。
 - 顶部胶囊标题标“第几次·谁先开口”，配轮次计数；章节转场用大号书法字。
 - 适合讲算法、博弈、匹配类过程：同一组元素反复重排，观众看连线变化理解规则。
 
-### 5. 哲思极简 `philosophy-minimal/`
+### 6. 哲思极简 `philosophy-minimal/`
 - `entropy-particles`：粒子系统讲概念（粒子散开=混乱、点阵组成人像=有序），
   单个大字金句居中（“疏远。”“混乱，是宇宙的默认设置。”），冷暖两色发光点。
 - `nihilism-line-art`：黑底白色虚线/点线手绘，形象逐笔画出或由点汇聚，文字也会变成线条元素；

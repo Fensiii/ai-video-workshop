@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# 带好 libEGL 路径运行 python3（每次 Bash 调用都是新 shell，用它免去重复 export）。
+# 用法：tools/skpy render.py 60     （先跑过一次 tools/setup.sh）
+export LD_LIBRARY_PATH="$HOME/.egl${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+exec python3 "$@"

@@ -1,11 +1,4 @@
-# my-first-pr
+# ai-video-workshop
 
-我的第一个练习仓库，用来学习 GitHub 的 Pull Request 流程。
-
-## PR 流程
-
-1. 从 `main` 新建一个分支：`git switch -c <分支名>`
-2. 修改文件后提交：`git add .`，然后 `git commit -m "说明"`
-3. 推送分支：`git push -u origin <分支名>`
-4. 创建 PR：`gh pr create`
-5. 检查无误后合并：`gh pr merge`
+用 Claude Code 做视频的工作区：`works/` 成片库、`references/` 参考素材库、
+`tools/` 常用脚本、`.claude/skills/` 历次项目经验。规则见 `CLAUDE.md`。

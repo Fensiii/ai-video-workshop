@@ -5,31 +5,39 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 
 # 数据历史走势视频：经验与流程
 
-参考实现：`works/2026-10-17_bitcoin-2010-2026/src/`（比特币版，可直接改数据和事件复用）
-- `btc_common.py`：数据加载、事件表、章节、时间映射、镜头预计算
-- `render.py`：skia 逐帧渲染（背景/图表/特效/HUD/片头片尾/镜头 FX）
-- `audio.py`：纯合成音效轨（无配音、无音乐素材）
-- `run_render.py`：多进程分段渲染 + ffmpeg 拼接
+参考实现：`works/2026-10-17_bitcoin-2010-2026/src/`（比特币版，改数据和事件即可复用）
+
+**快速复现**（在 `works/2026-10-17_bitcoin-2010-2026/` 下，`fonts/ data/ work/ out/` 已 gitignore）：
+```bash
+../../tools/setup.sh fonts && mkdir -p data work out
+curl -sSf -o data/btc_cm.csv https://raw.githubusercontent.com/coinmetrics/data/master/csv/btc.csv
+cd src && ../../../tools/skpy render.py 16.6 60   # 单帧 → src/test_frames/，约 0.4 s/帧
+```
+
+**代码地图**（按函数名 `grep -n "^def <名>"` 定位后只读那一段，别整读 1600 行的 `render.py`）：
+- `btc_common.py`：`load_prices` 数据 · `EVENTS_RAW`/`ERAS`/`MILESTONES` 文案 · `BLACK_SWANS`/`SHAKE`/`BRACKETS` 特效表 ·
+  `head_day` 时间映射 · `precompute_camera`/`get_camera` 镜头（缓存 `work/cam_cache.npz`，改事件后删掉）
+- `render.py`：字体 `TF` · 背景 `draw_background`/`draw_dust`/`draw_vignette` · 图表 `Cam`/`draw_curtains`（光柱）/
+  `draw_line`/`draw_head`/`draw_grid` · 事件 `_label_tops`（防重叠）/`draw_event_fx`/`draw_milestones` ·
+  镜头 FX `zoom_env`/`shake_impulse`/`camera_fx` · 标点 `draw_marks`/`_reticle`/`_pill_text` ·
+  HUD `draw_hud`/`draw_minimap`/`_callout_box`/`draw_era` · 片头 `draw_intro` · 片尾 `draw_ending_text` · 总装 `render_frame`
+- `audio.py`：合成器 `whoosh`/`boom`/`bell`/`sparkle`/`click`/`ping`/`riser`/`glitch`/`rumble` · 底噪 `build_bed` · 编排 `main` → `out/sfx.wav`
+- `run_render.py N [f0 f1]`：4 进程分 N 段渲染 → `out/video_noaudio.mp4`
 
 ## 1. 分析参考视频（先做，别凭印象）
-1. `ffprobe` 看时长/分辨率/音轨。抖音视频常是竖版长画布，16:9 内容在中间：
+1. `tools/probe.sh` 看时长/分辨率/音轨。抖音视频常是竖版长画布，16:9 内容在中间：
    `ffmpeg -vf cropdetect` 找内容区，再 `crop=1920:1080:0:Y` 裁出来。
-2. 1fps 带时间戳的拼图逐张看全片：
-   `-vf "fps=1,scale=640:360,drawtext=...%{pts\:hms}...,tile=3x3"`
+2. 带时间戳拼图看全片：先 `tools/thumbs.sh in.mp4 o.jpg 4 3 480 --ts` 总览，
+   再 `tools/sheet.sh in.mp4 dir 2` 逐段（只在节奏密集段用 1s 间隔）。
 3. 关键帧拉全分辨率，取样配色（PIL 取最亮像素均值）、量字号和位置。
 4. 声音：先看频谱判断有没有人声（人声在 100–4kHz 有共振峰/音节节奏）。
    原片可能只是背景音乐、根本没有旁白——如实告诉用户。
 5. 记下节奏规律：事件前减速停留 1–2 秒、事件间快进；章节大标题；“首次突破”整数关口。
 
 ## 2. 环境坑（云端容器）
-- 网络只放行少数域名：`raw.githubusercontent.com`、`registry.npmjs.org`、`pypi.org` 可用；
-  CoinGecko/Binance/Yahoo/FRED/Google Fonts 都被 403。
-- 价格数据：`https://raw.githubusercontent.com/coinmetrics/data/master/csv/btc.csv`
-  （列 `PriceUSD`，日频，有约半年延迟——必须告诉用户数据截止日）。
-- 中文/数字字体走 npm：`@expo-google-fonts/noto-serif-sc`、`noto-sans-sc`、`inter`（内含 TTF）。
-- `pip install skia-python` 后缺 `libEGL.so.1`：软链 Playwright 自带的
-  `/opt/pw-browsers/chromium-*/chrome-linux/libEGL.so` 到一个目录，加进 `LD_LIBRARY_PATH`。
-- 多进程用 fork；随机种子不要用 `hash()`（每进程不同），用 `zlib.crc32`。
+- 通用环境见 `tools/setup.sh` 和 skill `video-project-playbook` §二。
+- 价格数据：Coin Metrics GitHub CSV（列 `PriceUSD`，日频，约半年延迟——必须告诉用户数据截止日）；
+  CoinGecko/Binance/Yahoo/FRED 都被 403。其它资产先在 GitHub 找 CSV 源。
 
 ## 3. 渲染架构要点
 - 透视图表：日期为 u、log 价格为 v，绕 Y 轴旋转 ~36° 的针孔投影；
@@ -61,13 +69,12 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 用频谱图核对音效时刻与画面事件对齐。
 
 ## 6. 出片与交付
-- 测试：`python3 render.py 16.6 30 ...` 出单帧 PNG，拼图检查；改动后再跑小段视频看动态。
-- 全片：`python3 run_render.py 16`（4 核约 11–13 分钟，0.4–0.7 s/帧）。
-- 编码：GitHub 单文件上限 100MB。加晃动后 crf19 会到 110MB →
-  用两遍编码 `-b:v 3500k`，194 秒约 90MB。
+- 测试：`tools/skpy render.py 16.6 30 ...` 出单帧 PNG，拼成一张小图检查；改动后再跑小段视频看动态。
+- 全片：`../../../tools/skpy run_render.py 16 > ../work/render.log 2>&1` 后台跑（4 核约 11–13 分钟），
+  只 `tail -2` 看进度；`audio.py` 出音效后混流。
+- 编码：加晃动后 crf19 会到 110MB → `tools/fit100.sh`（两遍编码，194 秒约 90MB）。
 - 数字全部用数据核对；没把握的事件原因不要编，写得保守并告知用户。
 - 交付时说明：数据截止日、与原片不同的改编点、需要用户复核的文案。
-- 提交到新分支（不要直接推 main），不擅自开 PR。
 
 ## 7. 复用到新资产的步骤
 1. 换 `load_prices()` 数据源与 `PRICE/DATES`。

@@ -1,0 +1,10 @@
+# 环境缓存（tools/setup_env.sh 生成）
+.cache/
+# 各作品的渲染中间产物和下载的数据/字体
+build/
+works/*/data/
+works/*/fonts/
+__pycache__/
+*.pyc
+node_modules/
+*.x264*

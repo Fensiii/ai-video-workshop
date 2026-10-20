@@ -5,7 +5,8 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 
 # 数据历史走势视频：经验与流程
 
-参考实现：`works/2026-10-17_bitcoin-2010-2026/src/`（比特币版，可直接改数据和事件复用）
+参考实现：`works/2026-10-17_bitcoin-2010-2026/src/`（比特币版，可直接改数据和事件复用；
+运行步骤见该目录 `README.md`，一键出片 `make_final.sh`，参考原片 `references/data-history/nasdaq-55y.mp4`）
 - `btc_common.py`：数据加载、事件表、章节、时间映射、镜头预计算
 - `render.py`：skia 逐帧渲染（背景/图表/特效/HUD/片头片尾/镜头 FX）
 - `audio.py`：纯合成音效轨（无配音、无音乐素材）
@@ -26,9 +27,8 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
   CoinGecko/Binance/Yahoo/FRED/Google Fonts 都被 403。
 - 价格数据：`https://raw.githubusercontent.com/coinmetrics/data/master/csv/btc.csv`
   （列 `PriceUSD`，日频，有约半年延迟——必须告诉用户数据截止日）。
-- 中文/数字字体走 npm：`@expo-google-fonts/noto-serif-sc`、`noto-sans-sc`、`inter`（内含 TTF）。
-- `pip install skia-python` 后缺 `libEGL.so.1`：软链 Playwright 自带的
-  `/opt/pw-browsers/chromium-*/chrome-linux/libEGL.so` 到一个目录，加进 `LD_LIBRARY_PATH`。
+- 字体和 skia 的 libEGL：`source tools/setup_env.sh` 一步解决（字体从 npm 的 Expo Google Fonts 包取，
+  libEGL 借 Playwright 自带 Chromium 的）。
 - 多进程用 fork；随机种子不要用 `hash()`（每进程不同），用 `zlib.crc32`。
 
 ## 3. 渲染架构要点
@@ -62,9 +62,9 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 
 ## 6. 出片与交付
 - 测试：`python3 render.py 16.6 30 ...` 出单帧 PNG，拼图检查；改动后再跑小段视频看动态。
-- 全片：`python3 run_render.py 16`（4 核约 11–13 分钟，0.4–0.7 s/帧）。
-- 编码：GitHub 单文件上限 100MB。加晃动后 crf19 会到 110MB →
-  用两遍编码 `-b:v 3500k`，194 秒约 90MB。
+- 全片：`./make_final.sh`（并行渲染 → 合成音效 → 两遍编码，4 核约 15 分钟，0.4–0.7 s/帧）。
+- 编码：GitHub 单文件上限 100MB。加晃动后 crf19 会到 110MB → 两遍编码 `-b:v 3500k`，194 秒约 90MB。
+- 存档：`python3 tools/archive.py work ../build/final.mp4 <短名> --src . --note "..."`。
 - 数字全部用数据核对；没把握的事件原因不要编，写得保守并告知用户。
 - 交付时说明：数据截止日、与原片不同的改编点、需要用户复核的文案。
 - 提交到新分支（不要直接推 main），不擅自开 PR。
@@ -75,3 +75,4 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
    `SHAKE` / `BLACK_SWANS` / `BRACKETS`。
 3. 改 HUD 文案（标题、“收盘价格”）、片头片尾文案与倍数。
 4. 先出 10 张关键帧确认版面，再全片渲染。
+5. 把 `src/` 整个复制到新作品目录再改，别直接改比特币那份。

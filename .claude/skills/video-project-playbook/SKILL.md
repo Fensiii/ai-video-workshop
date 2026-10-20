@@ -1,12 +1,13 @@
 ---
 name: video-project-playbook
-description: 本仓库历次视频项目的经验总结与可复用代码索引（特斯拉进化 2D 动画、特斯拉进化科普配音版、特斯拉凭什么无配音版、歌曲混剪 MV 加歌词、比特币历史走势复刻）。用户要做新视频、复刻参考视频、做科普/解说/动画/歌词 MV、问“上次怎么做的”时先读这里，再决定复用哪套代码。
+description: 本仓库做视频的总手册：通用流程、环境坑、渲染路线选择、历次项目经验（特斯拉 2D 动画/科普、歌词 MV、比特币走势复刻）、参考素材库各风格该怎么做、存档工具用法。用户要做新视频、复刻参考视频、做科普/解说/动画/歌词 MV、问“上次怎么做的”时先读这里。
 ---
 
 # 视频项目经验手册（ai-video-workshop）
 
-各项目代码在不同分支，`main` 上没有。用 `git fetch origin <分支>` 后
-`git show origin/<分支>:<路径>` 读，或 `git checkout origin/<分支> -- <目录>` 取回。
+`main` 上有：成片库 `works/`（比特币、歌曲 MV，含生成脚本）、参考库 `references/`、工具 `tools/`。
+特斯拉三个项目的代码只在各自分支：`git fetch origin <分支>` 后用 `git show origin/<分支>:<路径>` 读，
+或 `git checkout origin/<分支> -- <目录>` 取回。
 
 | 项目 | 分支 / 目录 | 形式 | 技术栈 |
 |---|---|---|---|
@@ -19,8 +20,17 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。
 
-**参考素材库 `references/`**：用户给过的参考视频按类型归档（数据走势、歌词 MV、暗金科普、卡通科普、哲思极简），
-每个配缩略拼图，`references/README.md` 写了各风格要点。接新需求先看这里有没有同类参考。
+**参考素材库 `references/`**：用户给过的参考视频按风格归档，每个配缩略拼图，`references/README.md` 写了各风格要点。
+接新需求先看这里有没有同类参考，再按下表选做法：
+
+| 参考风格 | 目录 | 推荐路线 | 可复用的旧代码 |
+|---|---|---|---|
+| 数据历史走势 | `data-history/` | skia 逐帧 | `works/2026-10-17_bitcoin-2010-2026/src/`（skill `data-history-video`） |
+| 暗金知识科普（Iwanau 系） | `knowledge-explainer/dark-gold/` | HTML/Canvas + Playwright | `tesla-evolution-explainer` 分支 `tesla-success/`（字幕高亮、合成配乐） |
+| 深蓝信息图科普 | `knowledge-explainer/navy-infographic/` | HTML + CSS 动画 + Playwright | 同上，版式更简单 |
+| 卡通夜景算法演示 | `knowledge-explainer/cartoon-night/` | HTML/Canvas（角色用 SVG） | 同上 |
+| 歌词动画 MV | `lyric-mv/` | skia 或 Canvas 画角色，ASS/LRC 对时间轴 | `works/2026-10-17_song-mv-duanfa/`（歌词时间轴） |
+| 哲思极简（粒子/点线） | `philosophy-minimal/` | skia 粒子与路径动画 | 比特币 `render.py` 里的粒子、发光、背景代码 |
 
 ---
 
@@ -36,13 +46,18 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
    拼成拼图检查版面、重叠、出界，再全片渲染。
 5. **并行分段渲染**：4 路分段 → 各自编码 → `ffmpeg concat -c copy` 拼接 → 最后混音。
 6. **成片自检**：ffprobe 看规格；抽 8 帧拼图看画面；ebur128 看响度（约 −16 LUFS、真峰值 ≤ −1 dB）。
-7. **存参考**：用户上传的参考素材会随容器消失——当场存进 `references/<类型>/`，
-   配缩略拼图并更新 `references/README.md`。
-8. **存成片**：最终视频同步存进 `works/<日期>_<英文短名>/`（成片 + thumbs.jpg + 字幕/脚本），更新 `works/README.md`。
+7. **存参考**：用户上传的参考素材会随容器消失——当场
+   `python3 tools/archive.py ref <文件> <类型>/<短名> --note "..."`，再手写风格要点进 `references/README.md`。
+8. **存成片**：交付同时 `python3 tools/archive.py work <成片> <短名> --src <脚本目录> --note "..."`
+   （自动拼图、超限压缩、写索引）。
 9. **交付**：`SendUserFile` 发视频；说明数据截止日、改编点、需要用户复核的文案。
    提交到新分支，不直接推 `main`，不擅自开 PR。
 
 ## 二、环境与工具坑（云端容器）
+
+先 `source tools/setup_env.sh`：装 Python 依赖、从 npm 下中文/数字字体到 `.cache/fonts`（导出 `VIDEO_FONT_DIR`）、
+给 skia 补 libEGL（导出 `LD_LIBRARY_PATH`）。别写成 `source ... | grep`，管道会让它跑在子 shell 里、环境变量丢失。
+下面是它背后的原因，排错时看：
 
 - 网络白名单很窄：`raw.githubusercontent.com`、`registry.npmjs.org`、`pypi.org` 能用；
   多数行情 API、Google Fonts、CDN 被 403。先 `curl -I` 探测，失败就换 npm/GitHub 源。
@@ -55,7 +70,8 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
   `NODE_PATH=$(npm root -g) node render.js`，必要时 `CHROMIUM_PATH=/opt/pw-browsers/chromium`。
 - 多进程渲染用 fork；随机数种子别用 Python `hash()`（每进程不同），用 `zlib.crc32` 或固定种子。
 - GitHub 单文件上限 100MB：加镜头晃动等高细节画面后 crf19 会超；用两遍编码 `-b:v 3500k`
-  （约 3 分钟 ≈ 90MB）。
+  （约 3 分钟 ≈ 90MB）。`tools/archive.py` 存档时会自动检查并压缩。
+- 渲染中间产物放各作品的 `build/`，下载的数据放 `data/`，都已在 `.gitignore` 里，不会误提交。
 - 长任务（全片渲染 10+ 分钟）放后台，用 `until grep ... ; do sleep 10; done` 等完成，不要轮询刷屏。
 
 ## 三、三种渲染路线怎么选

@@ -381,7 +381,7 @@ def main():
     outl *= fade
     outr *= fade
     st = np.stack([outl, outr], axis=1)
-    path = os.path.join(B.ROOT, 'out', 'sfx.wav')
+    path = os.path.join(B.BUILD, 'sfx.wav')
     wavfile.write(path, SR, (st * 32767).astype(np.int16))
     print('wrote', path, 'gain', gain, 'peak_before', pk * gain)
 

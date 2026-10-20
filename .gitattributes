@@ -1,2 +1,13 @@
 # 统一以 LF 换行存入仓库，避免 Windows 下的 CRLF 警告和无意义的 diff
 * text=auto eol=lf
+# 媒体文件按二进制处理，不做换行转换和文本 diff
+*.mp4 binary
+*.mov binary
+*.webm binary
+*.wav binary
+*.mp3 binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.ttf binary
+*.otf binary

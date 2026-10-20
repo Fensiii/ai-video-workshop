@@ -7,8 +7,10 @@ import os
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_CSV = os.path.join(ROOT, 'data', 'btc_cm.csv')
-FONT_DIR = os.path.join(ROOT, 'fonts')
+BUILD = os.environ.get('BUILD_DIR', os.path.join(ROOT, 'build'))  # renders + caches (gitignored)
+DATA_CSV = os.environ.get('BTC_DATA_CSV', os.path.join(ROOT, 'data', 'btc_cm.csv'))
+FONT_DIR = os.environ.get('VIDEO_FONT_DIR', os.path.join(ROOT, 'fonts'))
+os.makedirs(BUILD, exist_ok=True)
 
 W, H = 1920, 1080
 FPS = 30
@@ -431,7 +433,7 @@ def precompute_camera():
     return cam
 
 
-_CAM_CACHE = os.path.join(ROOT, 'work', 'cam_cache.npz')
+_CAM_CACHE = os.path.join(BUILD, 'cam_cache.npz')
 
 
 def get_camera():

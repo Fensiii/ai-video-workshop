@@ -10,7 +10,7 @@ import numpy as np
 import btc_common as B
 import render as R
 
-OUT = os.path.join(B.ROOT, 'out')
+OUT = B.BUILD
 PREFIX = os.environ.get('SEG_PREFIX', 'seg_')
 os.makedirs(OUT, exist_ok=True)
 

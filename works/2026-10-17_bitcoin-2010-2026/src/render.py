@@ -235,7 +235,7 @@ def _make_nebula():
     return neb.astype(np.float32), haze.astype(np.float32)
 
 
-_NEB_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'nebula.npz')
+_NEB_CACHE = os.path.join(B.BUILD, 'nebula.npz')
 if os.path.exists(_NEB_CACHE):
     _z = np.load(_NEB_CACHE)
     NEB, HAZE = _z['neb'], _z['haze']
@@ -1576,7 +1576,7 @@ def render_frame(fi, arr=None):
 if __name__ == '__main__':
     import sys
     import time
-    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test_frames')
+    out = os.path.join(B.BUILD, 'test_frames')
     os.makedirs(out, exist_ok=True)
     ts = [float(a) for a in sys.argv[1:]] or [2.0]
     for tt in ts:

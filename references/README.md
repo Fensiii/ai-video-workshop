@@ -3,6 +3,7 @@
 用户提供的参考视频，按类型归档。每个视频旁有一张同名 `.jpg` 缩略拼图（全片均匀取 12 帧），
 先看拼图快速判断风格，再按需打开视频逐帧拆解。
 
+> 这批 8 个（AI 流星 / 小螃蟹 / 科普 / 七美德）都带音轨，尚未逐段听是否有人声旁白。
 > 声音判断是看频谱粗判的：科普和哲思类都是“字幕叙事 + 配乐/音效”，没看到明显的人声旁白；
 > 歌词 MV 是带人声的歌曲。真要复刻时请再仔细听一遍。
 
@@ -20,6 +21,14 @@
 | `knowledge-explainer/cartoon-night/stable-marriage.mp4` | 2:26 | 1280×720 | 稳定婚配（盖尔-沙普利算法）：4 男 4 女卡通人物 + 红线连接演示 |
 | `philosophy-minimal/entropy-particles.mp4` | 2:50 | 1024×576 | 熵/混乱：粒子、点阵人像、骰子分布、暗房间 3D 网格，大字金句 |
 | `philosophy-minimal/nihilism-line-art.mp4` | 2:45 | 1024×576 | 虚无主义：白色点线手绘（骆驼、狮子、孩子），黑底极简 |
+| `data-history/ai-leaderboard-meteors.mp4` | 3:41 | 1920×1080 | AI 大模型 LMArena 第一名变迁 2023.03–2026.10：每个模型一颗流星，榜首最亮 |
+| `ai-skit/claude-crab-100-yuan.mp4` | 1:54 | 1920×1080 | Claude 小螃蟹拿 100 元“三天下华尔街”：/goal 指令 + 倒计时 + Opus 用量条的剧情短片 |
+| `knowledge-explainer/dark-gold/choking-under-pressure.mp4` | 2:32 | 1920×1080 | 关键时刻为什么失常：工作记忆、高尔夫推杆实验、三个方法 |
+| `knowledge-explainer/dark-gold/dopamine-learning.mp4` | 3:40 | 1920×1080 | 多巴胺与学习：短视频 vs 学习曲线、快乐门槛、“PART TWO”分章 |
+| `knowledge-explainer/navy-gold/learning-methods.mp4` | 2:22 | 1920×1080 | 你的学习 80% 白费：漏桶、记忆保留率、学习金字塔、三步法卡片 |
+| `knowledge-explainer/neon-psych/stop-overexplaining.mp4` | 5:41 | 1024×576 | 怕被误会、过度解释：霓虹线条人物/手机/心电波，认知重评 |
+| `knowledge-explainer/soft-psych/overthinking-heart.mp4` | 1:21 | 1920×1080 | 焦虑与过度思考：聊天气泡开场、红色“心”字 + 心电线、手捧光点 |
+| `philosophy-minimal/seven-virtues-courage.mp4` | 0:25 | 720×1280（中间 720×404 为画面） | 七美德之一·勇气：网暴评论卡片围攻 → 碎片聚成金色骑士 + 大标题 |
 
 ## 各类风格要点（复刻时先读）
 
@@ -55,6 +64,38 @@
 - `nihilism-line-art`：黑底白色虚线/点线手绘，形象逐笔画出或由点汇聚，文字也会变成线条元素；
   结尾一抹金色日出收束。左上角章节名小字。
 - 节奏慢、留白多，音乐氛围化。适合 skia 粒子/路径动画。
+
+### 6. AI 排行榜流星（数据类）`data-history/ai-leaderboard-meteors`
+- 深空星点背景，每个模型是一颗带拖尾的彩色流星，按“厂商色”着色（OpenAI 青、Google 蓝、Anthropic 橙…）；
+  当前榜首最亮、带 NO.1 小标，被超越的流星变暗远去。
+- 左上：大号等宽日期（逐日跳动）+ 当前第一名 + 厂商 + “榜首在位 N 次”计数。
+- 底部：金色小字“2025 年 1 月”+ 白字事件说明（如“R1 登顶美国 App Store”），事件时有闪电/光环特效。
+- 结尾所有轨迹汇成一束彩色丝带 + 问号，金句“每一颗星，都曾是一颗流星”。
+- 做法：skia 逐帧最合适（发光拖尾），数据结构可照 `data-history-video` 的 EVENTS 思路。
+
+### 7. AI 剧情短片 `ai-skit/`
+- 主角是 Claude 橙色像素小螃蟹（Clawd），3D 低多边形质感，场景在 Claude 桌面 App 界面与 3D 小场景之间切换。
+- 常驻 HUD：左上“本金 ¥100.00 / 剩余 70:39:39”倒计时，右上“Opus 5.5 用量”进度条逐步涨到 91%，形成紧迫感。
+- 剧情梗：/goal 指令 → 求助 ChatGPT/Grok 被拒 → 去应聘 → 炒“螃蟹科技”亏光 → 反转结尾“你这大肥螃蟹，吃白饭的吗？”。
+- 适合做法：HTML/Three.js（或 Remotion）+ Playwright 截帧；界面截图类元素用 DOM 还原。
+
+### 8. 知识科普补充风格
+- `dark-gold/choking-under-pressure`、`dopamine-learning`：同属暗金，但更“金线图标”：
+  金色细线插画（大脑、钢琴、靶子、哑铃）、柱状/曲线图用米白 + 红色对比；
+  左上大号章节编号“01/02”+ 小字章节名，右上书名卡片 + 红印章，中部“PART TWO”章节页；
+  “方法 1/3”分步结构，结尾一句收束。
+- `navy-gold/learning-methods`：深海军蓝底 + 金黄强调色，大号百分比数字（80%、10%）红/金，
+  线框隐喻图（漏桶、垃圾桶、泳池小人）、进度条对比、学习金字塔、三张方法卡片；“错误 02 / 第三步”大号背景数字转场。
+- `neon-psych/stop-overexplaining`：紫红/青色霓虹发光线条，Q 版人物、手机、汽车、饭桌俯视；
+  字幕居中下方，关键词黄字 + 下划线；情绪用乱线团/心电波表达。
+- `soft-psych/overthinking-heart`：开场白底 iMessage 气泡“一张图说明…”梗图，转深色；
+  巨大珊瑚红“心”字配心电线和 BPM 数字（111 → 68 表示平静下来），手捧光粒子，
+  结尾转暖米色 + 金句“允许自己，轻一点”。
+
+### 9. 哲思·七美德 `philosophy-minimal/seven-virtues-courage`
+- 竖版画布、中间 16:9。前半段黑红：网暴评论卡片（头像 + 昵称 + 点赞数）层层堆叠围攻，
+  文字组成燃烧的人头剪影；后半段碎片聚合成金色骑士（剑、王冠、盾、光环铭文）。
+- 定版：左侧“七美德·之一”小标签 + 问句 +「站出来」直角引号 + 金色书法大字“勇气”+ 拉丁文 FORTITUDO · COURAGE。
 
 ## 存放规则
 

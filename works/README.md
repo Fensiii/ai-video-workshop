@@ -6,6 +6,7 @@
 | 目录 | 成片 | 时长 | 规格 | 说明 |
 |---|---|---|---|---|
 | `2026-10-17_bitcoin-2010-2026/` | `bitcoin_2010-2026_16x9.mp4` | 3:14 | 1920×1080 30fps | 比特币 2010–2026 走势，一比一复刻 `references/data-history/nasdaq-55y.mp4`；只有合成音效；含镜头晃动、推近和图上标注。生成脚本在 `src/`，经验见 skill `data-history-video` |
+| `2026-10-21_seven-virtues-meteors/` | `seven-virtues-meteors_16x9.mp4` | 2:34 | 1920×1080 30fps | 七美德流星：照 `references/data-history/ai-leaderboard-meteors.mp4` 版式，每种美德一颗流星，22 个历史节点（温泉关→2026）轮流“最亮”，结尾七星汇聚；合成配乐 + 音效、无配音。脚本在 `src/` |
 | `2026-10-17_song-mv-duanfa/` | `duanfa-girl-mv_16x9.mp4` | 1:10 | 1920×1080 | 《幻昼》×《短发女孩》×《take me hand》混剪，带歌词字幕；`lyrics.ass` / `lyrics.lrc` 为歌词时间轴 |
 
 ## 不在库里的旧作品

@@ -15,6 +15,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 特斯拉，凭什么？（无配音） | `tesla-evolution-explainer` / `tesla-success/` | 2分38秒、字幕 + 合成配乐 | Canvas/DOM + Playwright + numpy 配乐 |
 | 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
+| 七美德·节制 | `works/2026-10-21_seven-virtues-temperance/`（成片 + `src/`） | 25s 两幕反转短片（红色诱惑 → 金色美德 + 标题卡），合成配乐 | HTML Canvas + Playwright + numpy 音频 |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。

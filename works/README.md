@@ -7,6 +7,7 @@
 |---|---|---|---|---|
 | `2026-10-17_bitcoin-2010-2026/` | `bitcoin_2010-2026_16x9.mp4` | 3:14 | 1920×1080 30fps | 比特币 2010–2026 走势，一比一复刻 `references/data-history/nasdaq-55y.mp4`；只有合成音效；含镜头晃动、推近和图上标注。生成脚本在 `src/`，经验见 skill `data-history-video` |
 | `2026-10-17_song-mv-duanfa/` | `duanfa-girl-mv_16x9.mp4` | 1:10 | 1920×1080 | 《幻昼》×《短发女孩》×《take me hand》混剪，带歌词字幕；`lyrics.ass` / `lyrics.lrc` 为歌词时间轴 |
+| `2026-10-21_seven-virtues-temperance/` | `seven-virtues-temperance_16x9.mp4` | 0:25 | 1920×1080 30fps | 七美德·之二「节制」，参照 `references/virtue-shorts/seven-virtues-courage.mp4`（勇气）的结构：红色诱惑推送围攻 → 文字填充人像 → 金光斜斩碎裂 → 金色持壶倒水女神 + 标题卡；音效配乐全合成。HTML Canvas + Playwright，代码在 `src/` |
 
 ## 不在库里的旧作品
 

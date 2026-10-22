@@ -2,7 +2,8 @@
 // 第一幕：黑暗里先亮起他手里的手机，推送卡片一张张从手机里飞出来；人显形后，每次心跳肚子鼓一圈，肚皮上的体重读数往上跳。
 // 转场：玻璃破碎，撞击点就是手机屏幕——手机屏先碎成蛛网，裂纹爬满全屏，整个画面连同那副身体一起炸碎（fx.js 的 glass*）。
 // 第二幕：碎片慢动作漂开，胖子的金色轮廓一圈圈收紧、烧掉多余的部分，变成雕像般的肌肉男；
-//        左边计数器从第 1 天跑到第 365 天、体重往下掉；最后他握紧举起的拳头，拳心亮起光。
+//        左边计数器从第 1 天跑到第 365 天、体重往下掉；他握紧举起的拳头，拳心亮起光，然后一个接一个地摆健美造型
+//        （单臂二头 → 前展双二头 → 最多肌肉 → 背阔展 → 双拳举过头 → 前展双二头 → 单臂二头），光源一直在近侧拳头里。
 // 接口（index.html 调用）：FIG.IMPACT / FIG.cardFrom / FIG.early / FIG.red / FIG.redTop / FIG.gold / FIG.burst / FIG.flare / FIG.events
 const FIG = { cracks: false };                       // 通用红裂纹会和玻璃裂纹抢戏，这里关掉
 const PHONE = [1150, 545], PH_ANG = -.5;            // 手机中心、倾角
@@ -186,9 +187,8 @@ FIG.redTop = (t, k) => {
 const MUS0 = [[1378, 246], [1322, 254], [1292, 284], [1284, 318], [1278, 338], [1258, 372], [1272, 382], [1271, 396], [1276, 404], [1272, 412],
   [1282, 444], [1316, 462], [1306, 504], [1250, 536], [1176, 568], [1150, 650], [1186, 720], [1208, 860], [1232, 1095],
   [1630, 1095], [1636, 880], [1628, 720], [1590, 600], [1516, 526], [1454, 444], [1440, 300]];
-const P_MUS = catmull(MUS0, true);
-// 举起的手臂：上臂水平、二头肌高高鼓起，前臂竖直，拳头举到眼前（掌心朝外，指缝里透光）
-const FIST = [1008, 352];                                      // 拳头（光源）
+// 举起的手臂（姿势 A）：上臂水平、二头肌高高鼓起，前臂竖直，拳头举到眼前（掌心朝外，指缝里透光）
+const FIST = [1008, 352];                                      // 姿势 A 的拳心；摆造型时光源跟着拳头走（curFist）
 const M0 = T.flash + .1, M1 = T.flash + 1.3, TC = T.flash + 1.45; // 轮廓收紧的起止、握拳亮光
 const MUS_ARM = [[1215, 650], [1170, 672], [1100, 682], [1030, 674], [975, 652], [948, 615], [938, 560], [942, 500], [956, 430],
   [946, 395], [948, 350], [962, 318], [990, 300], [1025, 298], [1050, 312], [1062, 345], [1060, 390], [1036, 430],
@@ -219,93 +219,169 @@ const MHAIR_CURLS = (() => {
   }
   return p;
 })();
-function bodyFill(path, x, y, r) {
+// ---------- 摆造型：一套骨骼 + 一串健美姿势关键帧 ----------
+// 手臂只画一份（上面那条举拳的近侧手臂 = 姿势 A），每一段按骨骼角度转过去再画；远侧手臂是它以 x=1390 为轴的镜像。
+// 姿势参数 [上臂角 ua, 屈肘 rel, 朝向 tw]：tw=-1 是整条手臂沿骨轴翻过来（二头肌朝里、肘往里弯，用于最多肌肉、背阔展）。
+// 翻面只在手臂伸直的中间姿势（mid）上发生，看不出跳变。
+const S_A = [1205, 605], E_A = [980, 615], W_A = [995, 440], MIRROR_X = 2780;
+const UA_A = Math.atan2(E_A[1] - S_A[1], E_A[0] - S_A[0]), FA_A = Math.atan2(W_A[1] - E_A[1], W_A[0] - E_A[0]);
+const LU = Math.hypot(E_A[0] - S_A[0], E_A[1] - S_A[1]), REL_A = ((FA_A - UA_A) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+// 身体（不含远侧手臂，远侧手臂单独画）
+const MUS_T = [...MUS0.slice(0, 19), [1478, 1095], [1492, 960], [1522, 848], [1560, 736], [1618, 668], [1606, 600], ...MUS0.slice(23)];
+const POSES = {
+  single:  { n: [UA_A, REL_A, 1], f: [1.69, .06, 1], torso: {}, front: 0 },                                     // 单臂二头（另一只手垂着）
+  double:  { n: [3.04, 1.78, 1], f: [3.04, 1.78, 1], torso: { 13: [0, -6], 25: [0, -6] }, front: 0 },           // 前展双二头
+  relaxC:  { n: [2.0, .08, 1], f: [2.0, .08, 1], torso: {}, front: 0, mid: 1 },                                   // 过渡：手臂垂直伸开
+  crab:    { n: [2.05, 1.55, -1], f: [2.05, 1.55, -1], sh: -12, torso: { 12: [0, -6], 13: [0, -18], 25: [0, -18], 14: [0, -10], 24: [0, -10] }, front: 1 }, // 最多肌肉：双拳在腹前对顶，斜方肌耸起
+  lat:     { n: [2.18, 1.33, -1], f: [2.18, 1.33, -1], torso: { 16: [-34, 0], 17: [-30, 0], 21: [30, 0], 22: [34, 0] }, front: 1 }, // 前展背阔：双拳叉腰，背阔肌张开
+  relaxV:  { n: [3.3, .08, 1], f: [3.3, .08, 1], torso: {}, front: 0, mid: 1 },                                   // 过渡：双臂侧平举伸直
+  victory: { n: [4.36, .15, 1], f: [4.36, .15, 1], sh: -10, torso: { 13: [0, -10], 25: [0, -10], 14: [0, -14], 24: [0, -14] }, front: 0 }, // 双拳举过头顶
+};
+const POSE_KEYS = [[0, 'single'], [12.28, 'single'], [12.7, 'double'], [14.15, 'double'], [14.38, 'relaxC'], [14.6, 'crab'],
+  [16.08, 'crab'], [16.5, 'lat'], [17.95, 'lat'], [18.18, 'relaxV'], [18.4, 'victory'], [19.88, 'victory'], [20.3, 'double'],
+  [21.78, 'double'], [22.2, 'single'], [99, 'single']];
+const POSE_HITS = POSE_KEYS.map((k, i) => ({ t: k[0], i })).filter(({ i }) => i && !POSES[POSE_KEYS[i][1]].mid && POSE_KEYS[i - 1][1] !== POSE_KEYS[i][1])
+  .map(({ t, i }) => ({ t, start: POSE_KEYS[i - (POSES[POSE_KEYS[i - 1][1]].mid ? 2 : 1)][0] }));   // 每次定格的时刻、动作起点
+const HITS = [TC, ...POSE_HITS.map(h => h.t)];
+const ebk = x => { const c = 1.3; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };  // 带一点回弹的定格
+function poseAt(t) {
+  let i = 0; while (i < POSE_KEYS.length - 2 && t >= POSE_KEYS[i + 1][0]) i++;
+  const [t0, a] = POSE_KEYS[i], [t1, b] = POSE_KEYS[i + 1], A = POSES[a], B = POSES[b], s = lin(t, t0, t1);
+  const f = a === b ? 0 : B.mid ? s * s : A.mid ? ebk(s) : ebk(s * s * (3 - 2 * s));
+  const arm = (pa, pb) => [mix(pa[0], pb[0], f), mix(pa[1], pb[1], f), A.mid ? pb[2] : pa[2]];
+  const torso = MUS_T.map((q, j) => { const da = A.torso[j] || [0, 0], db = B.torso[j] || [0, 0]; return [q[0] + mix(da[0], db[0], f), q[1] + mix(da[1], db[1], f)]; });
+  return { n: arm(A.n, B.n), f: arm(A.f, B.f), sh: mix(A.sh || 0, B.sh || 0, f), torso, front: a === b ? A.front : (s > .3 ? B.front : A.front) };
+}
+const deg = r => r * 180 / Math.PI;
+function armMats(p, sh, mirror) { // 一条手臂的两段变换（上臂、前臂 + 拳头）和拳心位置
+  const [ua, rel, tw] = p, wf = .72 + .28 * clamp(rel / 1.4), S = [S_A[0], S_A[1] + sh];
+  const E = [S[0] + Math.cos(ua) * LU, S[1] + Math.sin(ua) * LU], fa = ua + rel * tw;
+  const base = mirror ? new DOMMatrix([-1, 0, 0, 1, MIRROR_X, 0]) : new DOMMatrix();
+  const mU = base.translate(S[0], S[1]).rotate(deg(ua)).scale(1, tw * wf).rotate(-deg(UA_A)).translate(-S_A[0], -S_A[1]);
+  const mF = base.translate(E[0], E[1]).rotate(deg(fa)).scale(1, tw).rotate(-deg(FA_A)).translate(-E_A[0], -E_A[1]);
+  const q = mF.transformPoint(new DOMPoint(FIST[0], FIST[1]));
+  return { mU, mF, fist: [q.x, q.y] };
+}
+function rigAt(t) { const P = poseAt(t); return { ...P, near: armMats(P.n, P.sh, false), far: armMats(P.f, P.sh, true) }; }
+const pumpAt = t => HITS.reduce((m, h) => t >= h ? Math.max(m, Math.exp(-(t - h) * 4)) : m, 0); // 每次定格时肌肉充血一下
+
+let FIG_BASE = new DOMMatrix(), curFist = FIST;                  // 第二幕的基础变换、此刻拳头（光源）的位置
+const applyM = m => ctx.transform(m.a, m.b, m.c, m.d, m.e, m.f);
+function bodyFill(path) {
   const g = ctx.createLinearGradient(0, 240, 0, 1080); g.addColorStop(0, '#20180c'); g.addColorStop(.5, '#120d07'); g.addColorStop(1, '#070504');
   ctx.fillStyle = g; ctx.fill(path);
-  ctx.save(); ctx.clip(path); // 拳头的光从左上方把身体照亮
-  const rim = ctx.createRadialGradient(...FIST, 0, ...FIST, 620); rim.addColorStop(0, 'rgba(255,230,170,.26)'); rim.addColorStop(.45, 'rgba(200,150,70,.10)'); rim.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = rim; ctx.fillRect(0, 0, W, H); ctx.restore();
+  const L = ctx.getTransform().inverse().multiply(FIG_BASE).transformPoint(new DOMPoint(curFist[0], curFist[1])); // 光源换到当前局部坐标
+  ctx.save(); ctx.clip(path); // 拳头的光把身体照亮
+  const rim = ctx.createRadialGradient(L.x, L.y, 0, L.x, L.y, 620); rim.addColorStop(0, 'rgba(255,230,170,.26)'); rim.addColorStop(.45, 'rgba(200,150,70,.10)'); rim.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rim; ctx.fillRect(-4000, -4000, 8000, 8000); ctx.restore();
 }
-// 肌肉体积：[x, y, rx, ry, 强度]，金色柔光叠在肌肉鼓起来的地方（光从左上方的拳头来）
+// 肌肉体积：[x, y, rx, ry, 强度]，金色柔光叠在肌肉鼓起来的地方
 const TORSO_HL = [[1290, 660, 72, 50, .16], [1440, 668, 84, 52, .13], [1592, 650, 38, 62, .12], [1494, 540, 40, 22, .1], [1360, 470, 34, 30, .08],
   [1308, 800, 34, 36, .14], [1396, 800, 36, 36, .12], [1308, 884, 32, 36, .13], [1398, 884, 34, 36, .11], [1312, 966, 30, 34, .12], [1396, 966, 32, 34, .1],
-  [1240, 900, 18, 70, .1], [1600, 840, 26, 110, .1], [1330, 300, 40, 50, .08]];
-const ARM_HL = [[1082, 560, 66, 40, .2], [1190, 610, 32, 44, .14], [1080, 664, 52, 14, .08]];
-function sculpt(path, list) {
+  [1240, 900, 18, 70, .1], [1330, 300, 40, 50, .08]];
+const ARM_HL = [[1082, 560, 66, 40, .2], [1190, 610, 32, 44, .14], [1080, 664, 52, 14, .08]], FORE_HL = [[985, 540, 34, 70, .14]];
+function sculpt(path, list, pump = 1) {
   ctx.save(); ctx.clip(path); ctx.globalCompositeOperation = 'lighter';
   for (const [x, y, rx, ry, a] of list) {
     ctx.save(); ctx.translate(x - rx * .25, y - ry * .3); ctx.scale(rx, ry);
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, `rgba(255,214,140,${a})`); g.addColorStop(1, 'rgba(255,200,120,0)');
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, `rgba(255,214,140,${Math.min(.5, a * pump)})`); g.addColorStop(1, 'rgba(255,200,120,0)');
     ctx.fillStyle = g; ctx.fillRect(-1, -1, 2, 2); ctx.restore();
   }
   ctx.restore();
 }
-function drawMuscle(t, a) {
-  if (a <= 0) return;
-  ctx.save(); ctx.globalAlpha *= a;
-  bodyFill(P_MUS); sculpt(P_MUS, TORSO_HL); glowStroke(P_MUS, 3.2, 22);
-  const b = new Path2D(); // 下颌、颈、斜方肌、锁骨、胸肌、腹肌、腹外斜肌、前锯肌、人鱼线、垂着的右臂
-  b.moveTo(1284, 446); b.quadraticCurveTo(1336, 462, 1396, 440); b.lineTo(1404, 414);              // 下颌角
-  b.moveTo(1418, 426); b.quadraticCurveTo(1384, 488, 1340, 552);                                       // 胸锁乳突肌
-  b.moveTo(1316, 470); b.quadraticCurveTo(1326, 480, 1318, 492);                                       // 喉结
-  b.moveTo(1440, 470); b.quadraticCurveTo(1500, 520, 1570, 572);                                       // 斜方肌
-  b.moveTo(1300, 520); b.quadraticCurveTo(1270, 534, 1240, 556);                                       // 左侧斜方肌
-  b.moveTo(1240, 578); b.quadraticCurveTo(1290, 566, 1336, 566); b.moveTo(1356, 566); b.quadraticCurveTo(1430, 560, 1500, 572); // 锁骨
-  b.moveTo(1218, 650); b.bezierCurveTo(1230, 730, 1300, 760, 1346, 724);                               // 左胸下缘
-  b.moveTo(1352, 724); b.bezierCurveTo(1400, 768, 1490, 752, 1548, 690);                               // 右胸下缘
-  b.moveTo(1346, 588); b.lineTo(1348, 724);                                                            // 胸骨
-  b.moveTo(1540, 590); b.bezierCurveTo(1590, 620, 1612, 660, 1612, 720); b.moveTo(1548, 610); b.quadraticCurveTo(1560, 660, 1580, 712); // 右三角肌
-  b.moveTo(1572, 720); b.bezierCurveTo(1566, 860, 1572, 980, 1578, 1095);                              // 右臂内侧
-  b.moveTo(1600, 760); b.quadraticCurveTo(1612, 860, 1604, 960);                                       // 右肱二头肌
-  b.moveTo(1200, 724); b.quadraticCurveTo(1226, 800, 1222, 880);                                       // 背阔肌
-  for (const y of [742, 774, 806]) { b.moveTo(1212, y); b.quadraticCurveTo(1236, y + 2, 1250, y + 18); } // 前锯肌
-  b.moveTo(1238, 830); b.bezierCurveTo(1246, 900, 1256, 960, 1276, 1012);                              // 左腹外斜肌
-  b.moveTo(1484, 800); b.bezierCurveTo(1474, 890, 1462, 960, 1444, 1012);                              // 右腹外斜肌
-  b.moveTo(1270, 1000); b.quadraticCurveTo(1306, 1044, 1326, 1095); b.moveTo(1440, 1000); b.quadraticCurveTo(1408, 1044, 1390, 1095); // 人鱼线
-  glowStroke(b, 1.5, 8);
-  const abs = new Path2D(); // 腹肌：白线 + 两侧半月线 + 三道横向腱划，线条是弯的，不画成方块
+const TORSO_LINES = (() => { // 下颌、颈、斜方肌、锁骨、胸肌、胸骨、右三角肌、背阔肌、前锯肌、腹外斜肌、人鱼线
+  const b = new Path2D();
+  b.moveTo(1284, 446); b.quadraticCurveTo(1336, 462, 1396, 440); b.lineTo(1404, 414);
+  b.moveTo(1418, 426); b.quadraticCurveTo(1384, 488, 1340, 552);
+  b.moveTo(1316, 470); b.quadraticCurveTo(1326, 480, 1318, 492);
+  b.moveTo(1440, 470); b.quadraticCurveTo(1500, 520, 1570, 572);
+  b.moveTo(1300, 520); b.quadraticCurveTo(1270, 534, 1240, 556);
+  b.moveTo(1240, 578); b.quadraticCurveTo(1290, 566, 1336, 566); b.moveTo(1356, 566); b.quadraticCurveTo(1430, 560, 1500, 572);
+  b.moveTo(1218, 650); b.bezierCurveTo(1230, 730, 1300, 760, 1346, 724);
+  b.moveTo(1352, 724); b.bezierCurveTo(1400, 768, 1490, 752, 1548, 690);
+  b.moveTo(1346, 588); b.lineTo(1348, 724);
+  b.moveTo(1540, 590); b.bezierCurveTo(1584, 612, 1604, 646, 1604, 688); b.moveTo(1548, 612); b.quadraticCurveTo(1560, 650, 1574, 690);
+  b.moveTo(1200, 724); b.quadraticCurveTo(1226, 800, 1222, 880);
+  for (const y of [742, 774, 806]) { b.moveTo(1212, y); b.quadraticCurveTo(1236, y + 2, 1250, y + 18); }
+  b.moveTo(1238, 830); b.bezierCurveTo(1246, 900, 1256, 960, 1276, 1012);
+  b.moveTo(1484, 800); b.bezierCurveTo(1474, 890, 1462, 960, 1444, 1012);
+  b.moveTo(1270, 1000); b.quadraticCurveTo(1306, 1044, 1326, 1095); b.moveTo(1440, 1000); b.quadraticCurveTo(1408, 1044, 1390, 1095);
+  return b;
+})();
+const ABS_LINES = (() => { // 腹肌：白线 + 两侧半月线 + 三道横向腱划，线条是弯的，不画成方块
+  const abs = new Path2D();
   abs.moveTo(1350, 744); abs.bezierCurveTo(1354, 850, 1352, 960, 1358, 1070);
   abs.moveTo(1278, 760); abs.bezierCurveTo(1262, 840, 1266, 930, 1286, 1010); abs.moveTo(1432, 760); abs.bezierCurveTo(1450, 840, 1446, 930, 1424, 1010);
-  for (const [y, d] of [[842, 10], [924, 9], [1004, 7]]) {
-    abs.moveTo(1268, y + 4); abs.quadraticCurveTo(1310, y - d, 1350, y + 2); abs.moveTo(1353, y + 2); abs.quadraticCurveTo(1398, y - d, 1444, y + 4);
-  }
-  glowStroke(abs, 1.4, 7);
-  darkFill(MHAIR, '#16100a'); glowStroke(MHAIR, 2.2, 12);
-  ctx.save(); ctx.clip(MHAIR); glowStroke(MHAIR_CURLS, 1.1, 5); ctx.restore();
-  const f = new Path2D(); // 耳朵、眼、鼻翼、嘴、颧骨
+  for (const [y, d] of [[842, 10], [924, 9], [1004, 7]]) { abs.moveTo(1268, y + 4); abs.quadraticCurveTo(1310, y - d, 1350, y + 2); abs.moveTo(1353, y + 2); abs.quadraticCurveTo(1398, y - d, 1444, y + 4); }
+  return abs;
+})();
+const FACE_LINES = (() => { // 耳朵、眼、鼻翼、嘴、颧骨
+  const f = new Path2D();
   f.moveTo(1412, 372); f.bezierCurveTo(1392, 366, 1388, 412, 1408, 416); f.moveTo(1406, 382); f.quadraticCurveTo(1398, 394, 1406, 404);
   f.moveTo(1290, 332); f.quadraticCurveTo(1300, 326, 1312, 330); f.moveTo(1291, 337); f.quadraticCurveTo(1301, 341, 1310, 336);
   f.moveTo(1266, 378); f.quadraticCurveTo(1274, 384, 1276, 376);
   f.moveTo(1272, 404); f.lineTo(1290, 406);
   f.moveTo(1316, 360); f.quadraticCurveTo(1340, 372, 1360, 372);
-  glowStroke(f, 1.6, 7);
-  const brow = new Path2D(); brow.moveTo(1282, 320); brow.quadraticCurveTo(1300, 314, 1324, 318); glowStroke(brow, 3, 8); // 压低的眉：专注
-  ctx.save(); ctx.fillStyle = '#0c0905'; ctx.beginPath(); ctx.ellipse(1297, 333, 3.2, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-  accentFill(circ(1296, 332, 1.6), 8);
-  // 举起的手臂：上臂（二头肌鼓起）→ 前臂 → 拳头
-  bodyFill(P_UPARM); sculpt(P_UPARM, ARM_HL); glowStroke(P_UPARM_EDGE, 2.8, 16);
-  const ua = new Path2D(); ua.moveTo(1214, 566); ua.bezierCurveTo(1176, 590, 1176, 640, 1210, 664); // 三角肌
-  ua.moveTo(1150, 546); ua.bezierCurveTo(1120, 596, 1060, 612, 1000, 596);                           // 二头肌下缘
-  ua.moveTo(1150, 660); ua.quadraticCurveTo(1090, 646, 1030, 660);                                   // 三头肌
-  glowStroke(ua, 1.5, 8);
-  const vein = new Path2D(); vein.moveTo(1160, 560); vein.bezierCurveTo(1130, 552, 1108, 568, 1080, 552); vein.quadraticCurveTo(1054, 540, 1030, 556);
-  vein.moveTo(990, 600); vein.bezierCurveTo(1000, 560, 984, 520, 996, 470);
-  glowStroke(vein, 1, 5, '#e8b85a');
-  bodyFill(P_FORE); sculpt(P_FORE, [[985, 540, 34, 70, .14]]); glowStroke(P_FORE, 2.6, 14);
-  const fo = new Path2D(); fo.moveTo(944, 570); fo.bezierCurveTo(962, 540, 972, 500, 974, 450); fo.moveTo(1026, 580); fo.quadraticCurveTo(1018, 520, 1026, 466);
-  glowStroke(fo, 1.4, 7);
-  bodyFill(P_FIST); glowStroke(P_FIST, 2.4, 14);
-  const fi = new Path2D(); // 弯起来的四根手指（掌心朝外）和指尖
-  for (const y of [324, 350, 376]) { fi.moveTo(990, y + 2); fi.quadraticCurveTo(1026, y - 6, 1061, y + 2); }
-  for (const y of [312, 337, 363, 389]) { fi.moveTo(996, y - 8); fi.quadraticCurveTo(988, y, 996, y + 8); }
-  fi.moveTo(962, 320); fi.quadraticCurveTo(976, 360, 960, 400);                                      // 手背一侧的指节
-  glowStroke(fi, 1.3, 7);
-  darkFill(P_THUMB, '#18120a'); glowStroke(P_THUMB, 2, 10);                                          // 大拇指压在手指上
+  return f;
+})();
+const BROW = (() => { const p = new Path2D(); p.moveTo(1282, 320); p.quadraticCurveTo(1300, 314, 1324, 318); return p; })(); // 压低的眉：专注
+const UA_LINES = (() => { const p = new Path2D(); p.moveTo(1214, 566); p.bezierCurveTo(1176, 590, 1176, 640, 1210, 664); // 三角肌
+  p.moveTo(1150, 546); p.bezierCurveTo(1120, 596, 1060, 612, 1000, 596); p.moveTo(1150, 660); p.quadraticCurveTo(1090, 646, 1030, 660); return p; })(); // 二头肌下缘、三头肌
+const VEIN_U = (() => { const p = new Path2D(); p.moveTo(1160, 560); p.bezierCurveTo(1130, 552, 1108, 568, 1080, 552); p.quadraticCurveTo(1054, 540, 1030, 556); return p; })();
+const VEIN_F = (() => { const p = new Path2D(); p.moveTo(990, 600); p.bezierCurveTo(1000, 560, 984, 520, 996, 470); return p; })();
+const FO_LINES = (() => { const p = new Path2D(); p.moveTo(944, 570); p.bezierCurveTo(962, 540, 972, 500, 974, 450); p.moveTo(1026, 580); p.quadraticCurveTo(1018, 520, 1026, 466); return p; })();
+const FI_LINES = (() => { const p = new Path2D(); // 弯起来的四根手指（掌心朝外）、指尖、手背一侧的指节
+  for (const y of [324, 350, 376]) { p.moveTo(990, y + 2); p.quadraticCurveTo(1026, y - 6, 1061, y + 2); }
+  for (const y of [312, 337, 363, 389]) { p.moveTo(996, y - 8); p.quadraticCurveTo(988, y, 996, y + 8); }
+  p.moveTo(962, 320); p.quadraticCurveTo(976, 360, 960, 400); return p; })();
+function drawUpperArm(m, pump) {
+  ctx.save(); applyM(m);
+  bodyFill(P_UPARM); sculpt(P_UPARM, ARM_HL, pump); glowStroke(P_UPARM_EDGE, 2.8 + (pump - 1) * .6, 16); glowStroke(UA_LINES, 1.5, 8); glowStroke(VEIN_U, 1, 5, '#e8b85a');
   ctx.restore();
 }
-function fistLight(t, k) { // 握紧的拳头里透出的光
+function drawForearm(m, pump) {
+  ctx.save(); applyM(m);
+  bodyFill(P_FORE); sculpt(P_FORE, FORE_HL, pump); glowStroke(P_FORE, 2.6 + (pump - 1) * .6, 14); glowStroke(FO_LINES, 1.4, 7); glowStroke(VEIN_F, 1, 5, '#e8b85a');
+  bodyFill(P_FIST); glowStroke(P_FIST, 2.4, 14); glowStroke(FI_LINES, 1.3, 7); darkFill(P_THUMB, '#18120a'); glowStroke(P_THUMB, 2, 10); // 大拇指压在手指上
+  ctx.restore();
+}
+function armTrail(t) { // 换造型时手臂拖出的金色残影
+  const R0 = rigAt(t);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineJoin = 'round';
+  for (const [dt, al] of [[.05, .3], [.1, .18], [.15, .09]]) {
+    const R = rigAt(t - dt);
+    for (const side of ['near', 'far']) {
+      const a = R[side], b = R0[side], moved = Math.hypot(a.fist[0] - b.fist[0], a.fist[1] - b.fist[1]);
+      if (moved < 6) continue;
+      for (const [m, paths] of [[a.mU, [P_UPARM_EDGE]], [a.mF, [P_FORE, P_FIST]]]) {
+        ctx.save(); applyM(m); ctx.strokeStyle = `rgba(255,214,140,${al * Math.min(1, moved / 60)})`; ctx.lineWidth = 3; ctx.shadowColor = '#ffb040'; ctx.shadowBlur = 14;
+        for (const p of paths) ctx.stroke(p); ctx.restore();
+      }
+    }
+  }
+  ctx.restore();
+}
+function drawMuscle(t, a) {
+  if (a <= 0) return;
+  const R = rigAt(t), pump = 1 + 1.2 * pumpAt(t), P = catmull(R.torso, true);
+  ctx.save(); ctx.globalAlpha *= a;
+  drawUpperArm(R.far.mU, pump);                     // 远侧手臂：上臂总在身体后面，前臂看姿势（最多肌肉、背阔展时在身体前面）
+  if (!R.front) drawForearm(R.far.mF, pump);
+  bodyFill(P); sculpt(P, TORSO_HL, pump); glowStroke(P, 3.2 + (pump - 1) * .8, 22);
+  glowStroke(TORSO_LINES, 1.5, 8); glowStroke(ABS_LINES, 1.4, 7);
+  darkFill(MHAIR, '#16100a'); glowStroke(MHAIR, 2.2, 12);
+  ctx.save(); ctx.clip(MHAIR); glowStroke(MHAIR_CURLS, 1.1, 5); ctx.restore();
+  glowStroke(FACE_LINES, 1.6, 7); glowStroke(BROW, 3, 8);
+  ctx.save(); ctx.fillStyle = '#0c0905'; ctx.beginPath(); ctx.ellipse(1297, 333, 3.2, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  accentFill(circ(1296, 332, 1.6), 8);
+  if (R.front) drawForearm(R.far.mF, pump);
+  drawUpperArm(R.near.mU, pump); drawForearm(R.near.mF, pump);  // 近侧手臂在最前面
+  if (t > TC) armTrail(t);
+  ctx.restore();
+}
+function fistLight(t, k) { // 握紧的拳头里透出的光（跟着拳头走）
   if (k <= 0) return;
-  const [x, y] = FIST, pul = 1 + .06 * Math.sin(t * 2.4), age = t - T.gold;
+  const [x, y] = curFist, pul = 1 + .06 * Math.sin(t * 2.4), age = t - T.gold, mF = rigAt(t).near.mF;
   ctx.save(); ctx.globalAlpha *= k; ctx.globalCompositeOperation = 'lighter';
   const big = ctx.createRadialGradient(x, y, 0, x, y, 420); big.addColorStop(0, `rgba(255,246,225,${.26 * pul})`); big.addColorStop(.3, 'rgba(255,200,110,.13)'); big.addColorStop(1, 'rgba(255,180,90,0)');
   ctx.fillStyle = big; ctx.fillRect(x - 420, y - 420, 840, 840);
@@ -314,10 +390,12 @@ function fistLight(t, k) { // 握紧的拳头里透出的光
     const g = ctx.createLinearGradient(x, y, x + Math.cos(a) * l, y + Math.sin(a) * l); g.addColorStop(0, 'rgba(255,255,245,.7)'); g.addColorStop(1, 'rgba(255,210,130,0)');
     ctx.strokeStyle = g; ctx.lineWidth = i % 3 ? 1 : 2; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * 62, y + Math.sin(a) * 62); ctx.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); ctx.stroke();
   }
-  for (const y of [324, 350, 376]) { // 指缝里漏出的光线
+  ctx.save(); applyM(mF); // 指缝里漏出的光线（跟着拳头转）
+  for (const yy of [324, 350, 376]) {
     const g = ctx.createLinearGradient(990, 0, 1100, 0); g.addColorStop(0, 'rgba(255,250,235,.0)'); g.addColorStop(.3, `rgba(255,250,235,${.8 * pul})`); g.addColorStop(1, 'rgba(255,220,150,0)');
-    ctx.strokeStyle = g; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(990, y + 2); ctx.quadraticCurveTo(1026, y - 6, 1100, y + 4); ctx.stroke();
+    ctx.strokeStyle = g; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(990, yy + 2); ctx.quadraticCurveTo(1026, yy - 6, 1100, yy + 4); ctx.stroke();
   }
+  ctx.restore();
   for (const [rad, al] of [[44, .22], [26, .5], [14, .9]]) { const cg = ctx.createRadialGradient(x, y, 0, x, y, rad * pul); cg.addColorStop(0, `rgba(255,255,250,${al})`); cg.addColorStop(1, 'rgba(255,220,150,0)'); ctx.fillStyle = cg; ctx.fillRect(x - rad * 1.2, y - rad * 1.2, rad * 2.4, rad * 2.4); }
   for (let i = 0; i < 3; i++) { // 一圈圈往外扩散的光波（audio.py 同步：第 1 + i×0.9 秒起，每 2.7 秒一圈）
     if (age < 1 + i * .9 || t < TC) continue;
@@ -330,6 +408,21 @@ function fistLight(t, k) { // 握紧的拳头里透出的光
     const g = ctx.createLinearGradient(-len, 0, len, 0); g.addColorStop(0, 'rgba(255,230,180,0)'); g.addColorStop(.5, `rgba(255,255,250,${.85 * pul - .1})`); g.addColorStop(1, 'rgba(255,230,180,0)');
     ctx.fillStyle = g; ctx.fillRect(-len, -w / 2, len * 2, w); ctx.restore();
   }
+  ctx.restore();
+}
+function hitBursts(t) { // 每次定格：拳头处一圈光环 + 迸出的金色火花，身后闪一下
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  HITS.forEach((h, j) => {
+    const age = t - h; if (age < 0 || age > 1.2) return;
+    const [x, y] = rigAt(h + .3).near.fist, fl = 1 - lin(age, 0, .5);
+    if (fl > 0) { ctx.strokeStyle = `rgba(255,240,200,${fl})`; ctx.lineWidth = 3 + 6 * fl; ctx.shadowColor = '#ffd27a'; ctx.shadowBlur = 24; ctx.beginPath(); ctx.arc(x, y, 40 + (1 - fl) * 260, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0; }
+    if (j) { const g = ctx.createRadialGradient(HC[0], HC[1] + 200, 0, HC[0], HC[1] + 200, 760); g.addColorStop(0, `rgba(255,214,140,${.2 * (1 - lin(age, 0, .6))})`); g.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); }
+    const r = rng(500 + j);
+    for (let i = 0; i < 30; i++) {
+      const an = r() * Math.PI * 2, v = 160 + r() * 420, life = .5 + r() * .7; if (age > life) continue;
+      ctx.fillStyle = `rgba(255,232,170,${1 - age / life})`; ctx.fillRect(x + Math.cos(an) * v * age, y + Math.sin(an) * v * age + 140 * age * age, 2.6, 2.6);
+    }
+  });
   ctx.restore();
 }
 // ---------- 胖 → 瘦：金色轮廓一圈圈收紧 ----------
@@ -377,11 +470,14 @@ function burnEmbers(t) { // 收紧时从轮廓上剥落、往上飘的金色火�
   ctx.restore();
 }
 FIG.gold = (t, k) => {
+  FIG_BASE = ctx.getTransform(); curFist = rigAt(t).near.fist;
+  const pu = pumpAt(t);
+  ctx.save(); ctx.translate(1390, 760); ctx.scale(1 + .012 * pu, 1 + .012 * pu); ctx.translate(-1390, -760); // 定格时整个人鼓一下
   drawMuscle(t, lin(t, M1 - .45, M1 + .15));
   fistLight(t, eout(lin(t, TC, TC + .45)));
+  ctx.restore();
   morphGhost(t);
-  const fl = 1 - lin(t, TC, TC + .5); // 握拳那一下的光圈
-  if (fl < 1 && fl > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = `rgba(255,240,200,${fl})`; ctx.lineWidth = 3 + 6 * fl; ctx.shadowColor = '#ffd27a'; ctx.shadowBlur = 24; ctx.beginPath(); ctx.arc(...FIST, 40 + (1 - fl) * 260, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
+  hitBursts(t);
 };
 FIG.burst = t => burnEmbers(t);
 function dayCounter(t) { // 左边的计数器：第 1 天 → 第 365 天，体重往下掉；标题出来前淡出
@@ -401,8 +497,9 @@ function dayCounter(t) { // 左边的计数器：第 1 天 → 第 365 天，体
   ctx.restore();
 }
 FIG.flare = t => {
-  flare(FIST[0], FIST[1], (.22 + .12 * Math.sin(t * 2.4)) * lin(t, TC, TC + .6), 460);
-  flare(FIST[0], FIST[1], 1.1 * Math.sin(Math.PI * lin(t, TC, TC + .7)), 900);
+  const [x, y] = rigAt(t).near.fist;
+  flare(x, y, (.22 + .12 * Math.sin(t * 2.4)) * lin(t, TC, TC + .6), 460);
+  for (const h of HITS) { const [hx, hy] = rigAt(h + .3).near.fist; flare(hx, hy, (h === TC ? 1.1 : .6) * Math.sin(Math.PI * lin(t, h, h + .7)), 900); } // 每次定格一道横向光晕
   dayCounter(t);
 };
 // 人物专属音效时间点（render.js events 导出 → audio.py）
@@ -412,4 +509,5 @@ FIG.events = [
   { t: M0, kind: 'contract', dur: M1 - M0 },
   { t: M0 + .05, kind: 'counter', t1: M1 + .1 },
   { t: TC, kind: 'clench' },
+  ...POSE_HITS.map(h => ({ t: h.t, kind: 'pose', pre: h.t - h.start })),
 ];

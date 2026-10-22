@@ -350,8 +350,20 @@ def ev_clench(e):  # 握紧拳头：皮革吱一声 + 沉的一击 + 光亮起�
     add(hit + shine, e['t'], pan=-.3, gain=.6)
 
 
+def ev_pose(e):  # 摆一个造型：挥臂的呼啸越来越近 → 定格的一声闷击 + 和弦重音 + 高处的闪光
+    pre = e.get('pre', .42); n = int((pre + .08) * SR); tt = np.arange(n) / SR
+    wh = rng.standard_normal(n); wh = lp_fast(wh, 4) - lp_fast(wh, 40)
+    wh *= np.clip(tt / pre, 0, 1) ** 2 * np.clip((pre + .08 - tt) / .08, 0, 1)
+    add(wh, e['t'] - pre, pan=.25, gain=.9)
+    n = int(1.8 * SR); tt = np.arange(n) / SR
+    hit = np.sin(2 * np.pi * np.cumsum(48 + 80 * np.exp(-tt * 22)) / SR) * env(n, .002, .35)
+    stab = sum(np.sin(2 * np.pi * f * KF * tt) for f in [293.7, 440, 587.3, 880]) * env(n, .005, .45) * .18
+    shimmer = sum(np.sin(2 * np.pi * f * KF * tt + k) for k, f in enumerate([1760, 2349.3, 2960])) * env(n, .01, .7) * .06
+    add(hit + stab + shimmer, e['t'], pan=-.1, gain=.5)
+
+
 EVENT_SYNTH = dict(creak=ev_creak, knock=ev_knock, twang=ev_twang, clatter=ev_clatter, retract=ev_retract,
-                   swell=ev_swell, buzz=ev_buzz, contract=ev_contract, counter=ev_counter, clench=ev_clench)
+                   swell=ev_swell, buzz=ev_buzz, contract=ev_contract, counter=ev_counter, clench=ev_clench, pose=ev_pose)
 for e in EVENTS:
     EVENT_SYNTH[e['kind']](e)
 

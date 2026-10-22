@@ -17,6 +17,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
 | 七美德·节制 | `works/2026-10-21_seven-virtues-temperance/`（成片 + `src/`） | 25s 两幕反转短片（红色诱惑 → 金色美德 + 标题卡），合成配乐 | HTML Canvas + Playwright + numpy 音频 |
 | 七美德系列（之三~之七） | `works/2026-10-21_seven-virtues-series/`（成片 + `src/`） | 同一模板批量出 5 支：文案总表 `gen_stories.py` + 可换道具 `props.js` + `build.sh` 一键出片 | HTML Canvas + Playwright + numpy 音频 |
+| 七美德·天使篇 | `works/2026-10-22_seven-virtues-angels/`（成片 + `src/`） | 6 支，人像加翅膀成天使；`angel.js` 集中放特效（撕裂、裂纹、余烬、羽毛、上帝光、光晕）；特效多时每支约 12 分钟、33MB | HTML Canvas + Playwright + numpy 音频 |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。

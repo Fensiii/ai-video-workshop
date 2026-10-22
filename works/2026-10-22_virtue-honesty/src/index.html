@@ -1,0 +1,569 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:SerifBlack;src:url(fonts/NotoSerifSC_900Black.ttf)}
+@font-face{font-family:SerifBold;src:url(fonts/NotoSerifSC_700Bold.ttf)}
+@font-face{font-family:SansBold;src:url(fonts/NotoSansSC_700Bold.ttf)}
+@font-face{font-family:Sans;src:url(fonts/NotoSansSC_400Regular.ttf)}
+@font-face{font-family:Cinzel;src:url(fonts/Cinzel_400Regular.ttf)}
+@font-face{font-family:CinzelBold;src:url(fonts/Cinzel_700Bold.ttf)}
+html,body{margin:0;background:#000;overflow:hidden}
+canvas{display:block}
+</style>
+<script>window.VIRTUE = new URLSearchParams(location.search).get('v') || 'honesty';
+document.write('<script src="stories/' + window.VIRTUE + '.js"><\/script>');</script>
+<script src="props.js"></script>
+</head><body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+const W = 1920, H = 1080, S = window.STORY, T = S.t;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+
+// ---------- 工具 ----------
+function rng(seed) { return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lin = (t, a, b) => clamp((t - a) / (b - a));
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eout = x => 1 - Math.pow(1 - x, 3);
+const eback = x => { const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const mix = (a, b, k) => a + (b - a) * k;
+const noise = (x, s) => Math.sin(x * 1.7 + s) * .5 + Math.sin(x * 3.1 + s * 2.3) * .3 + Math.sin(x * 5.3 + s * .7) * .2;
+
+function catmull(pts, closed, tension = 0.5) {
+  const p = new Path2D(), n = pts.length;
+  const g = i => closed ? pts[(i + n) % n] : pts[clamp(i, 0, n - 1)];
+  p.moveTo(pts[0][0], pts[0][1]);
+  const m = closed ? n : n - 1;
+  for (let i = 0; i < m; i++) {
+    const p0 = g(i - 1), p1 = g(i), p2 = g(i + 1), p3 = g(i + 2), k = tension / 3;
+    p.bezierCurveTo(p1[0] + (p2[0] - p0[0]) * k, p1[1] + (p2[1] - p0[1]) * k,
+      p2[0] - (p3[0] - p1[0]) * k, p2[1] - (p3[1] - p1[1]) * k, p2[0], p2[1]);
+  }
+  if (closed) p.closePath();
+  return p;
+}
+
+// ---------- 人像几何（面朝左，位于画面右侧） ----------
+const HC = [1330, 430], HR = 345;           // 光环
+const SIL_PTS = [
+  [1355, 232], [1318, 245], [1296, 272], [1288, 305], [1287, 336], [1282, 352], [1271, 371], [1259, 391],
+  [1263, 400], [1275, 404], [1273, 414], [1267, 422], [1272, 430], [1269, 438], [1271, 451], [1281, 466],
+  [1300, 474], [1318, 477], [1322, 505], [1324, 545], [1300, 575], [1225, 602], [1172, 645], [1142, 725],
+  [1124, 830], [1112, 960], [1106, 1095], [1640, 1095], [1628, 960], [1610, 830], [1578, 705], [1530, 620],
+  [1492, 560], [1478, 480], [1466, 400], [1448, 322], [1418, 262], [1388, 238],
+];
+const SIL = catmull(SIL_PTS, true);
+const FACE = catmull(SIL_PTS.slice(0, 20), false);
+
+function jugPath() { // 原点在壶身中心，壶口朝 -y；单位像素
+  const p = new Path2D();
+  p.moveTo(-14, -92); p.lineTo(14, -92);                 // 口沿
+  p.quadraticCurveTo(10, -78, 12, -66);                   // 颈
+  p.bezierCurveTo(70, -50, 76, 40, 30, 70);               // 右腹
+  p.quadraticCurveTo(22, 78, 26, 90); p.lineTo(-26, 90);  // 圈足
+  p.quadraticCurveTo(-22, 78, -30, 70);
+  p.bezierCurveTo(-76, 40, -70, -50, -12, -66);           // 左腹
+  p.quadraticCurveTo(-10, -78, -14, -92);
+  p.closePath();
+  return p;
+}
+const JUG = jugPath();
+const JUG_SPOUT = (() => { const p = new Path2D(); p.moveTo(-14, -90); p.quadraticCurveTo(-36, -104, -48, -112); p.lineTo(-40, -98); p.quadraticCurveTo(-26, -88, -13, -80); return p; })();
+const JUG_HANDLE = (() => { const p = new Path2D(); p.moveTo(14, -80); p.bezierCurveTo(70, -96, 82, -10, 44, 30); return p; })();
+const UPPER = { x: 985, y: 585, a: -2.25, s: 1.0 };   // 上方的壶：倾倒
+const LOWER = { x: 1170, y: 960, a: 0.10, s: 1.08 };  // 下方的壶：承接
+function local(j, px, py) { const c = Math.cos(j.a), s = Math.sin(j.a); return [j.x + (px * c - py * s) * j.s, j.y + (px * s + py * c) * j.s]; }
+const SPOUT_TIP = local(UPPER, -46, -108), LOWER_MOUTH = local(LOWER, 0, -92);
+const STREAM_CTRL = [SPOUT_TIP[0] + 150, SPOUT_TIP[1] + 40];
+function streamPt(u) { const a = SPOUT_TIP, c = STREAM_CTRL, b = LOWER_MOUTH; const v = 1 - u; return [v * v * a[0] + 2 * v * u * c[0] + u * u * b[0], v * v * a[1] + 2 * v * u * c[1] + u * u * b[1]]; }
+
+// ---------- 预渲染：文字填充 ----------
+const textFill = document.createElement('canvas'); textFill.width = W; textFill.height = H;
+function buildTextFill() {
+  const g = textFill.getContext('2d'), r = rng(7);
+  g.font = '15px SansBold'; g.textBaseline = 'middle';
+  for (let y = 200; y < H + 20; y += 19) {
+    let x = 1080 + (y * 7 % 40) - 40;
+    while (x < 1700) {
+      const w = S.words[Math.floor(r() * S.words.length)] + ' · ';
+      g.fillStyle = r() < .3 ? '#ff8a3d' : (r() < .5 ? '#ff3b2a' : '#c8231c');
+      g.fillText(w, x, y); x += g.measureText(w).width;
+    }
+  }
+}
+
+// ---------- 背景 ----------
+function bgRed(t, k) {
+  ctx.fillStyle = '#060202'; ctx.fillRect(0, 0, W, H);
+  const pul = 0.75 + 0.25 * Math.sin(t * 5.5) * lin(t, 3, 8);
+  const r = mix(260, 620, eout(lin(t, 0, 8)));
+  const g = ctx.createRadialGradient(HC[0], HC[1] + 40, 0, HC[0], HC[1] + 40, r * 1.4);
+  g.addColorStop(0, `rgba(170,18,12,${0.75 * k * pul})`); g.addColorStop(.45, `rgba(90,6,6,${0.45 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+function bgGold(t) {
+  ctx.fillStyle = '#060504'; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(HC[0], HC[1], 0, HC[0], HC[1], 900);
+  g.addColorStop(0, 'rgba(120,92,40,.55)'); g.addColorStop(.35, 'rgba(50,38,18,.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // 顶部光柱
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 5; i++) {
+    const x = HC[0] - 120 + i * 60 + Math.sin(t * .4 + i) * 10, w = 40 + i % 2 * 30;
+    const lg = ctx.createLinearGradient(0, 0, 0, 620);
+    lg.addColorStop(0, `rgba(255,230,170,${.10 + .04 * Math.sin(t * .9 + i * 2)})`); lg.addColorStop(1, 'rgba(255,230,170,0)');
+    ctx.fillStyle = lg; ctx.fillRect(x - w / 2, 0, w, 620);
+  }
+  ctx.restore();
+  // 星尘
+  const r = rng(11);
+  for (let i = 0; i < 140; i++) {
+    const x = r() * W, y = (r() * H - t * (6 + r() * 14) + H * 4) % H, a = (.15 + r() * .5) * (.6 + .4 * Math.sin(t * 2 + i));
+    ctx.fillStyle = `rgba(255,225,160,${a})`; ctx.fillRect(x, y, 1.6, 1.6);
+  }
+}
+function vignette(a = .8) {
+  const g = ctx.createRadialGradient(W / 2, H / 2, H * .35, W / 2, H / 2, H * 1.05);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, `rgba(0,0,0,${a})`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+
+// ---------- 第一幕：推送卡片 ----------
+function rr(x, y, w, h, r) { const p = new Path2D(); p.roundRect(x, y, w, h, r); return p; }
+function drawCard(c, t, i) {
+  const [t0, x, y, rot, sc, app, ic, icol, title, body] = c;
+  const age = t - t0; if (age < 0) return;
+  const pop = eback(lin(age, 0, .28));
+  const drift = 1 + age * .025, s = sc * drift * mix(1.25, 1, pop);
+  const a = lin(age, 0, .12) * (1 - lin(t, T.grey + .3, T.flash) * .4);
+  const w = 430, h = 132, r = rng(100 + i);
+  let dx = Math.sin(t * .7 + i) * 6 + (x > 960 ? 1 : -1) * age * 4, dy = -age * 3 + Math.cos(t * .6 + i) * 4;
+  { const cx = x + w / 2 - HC[0], cy = y + h / 2 - HC[1], d = Math.hypot(cx, cy) || 1, push = eio(lin(t, T.figure - .2, T.figure + 2.4)) * Math.max(0, 760 - d) * .9;
+    dx += cx / d * push; dy += cy / d * push * .6; }
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.translate(x + w / 2 + dx, y + h / 2 + dy); ctx.rotate(rot * Math.PI / 180); ctx.scale(s, s);
+  ctx.transform(1, 0, Math.sin(i) * .08, 1, 0, 0);
+  ctx.translate(-w / 2, -h / 2);
+  ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 10;
+  ctx.fillStyle = 'rgba(26,14,13,.94)'; ctx.fill(rr(0, 0, w, h, 16));
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = 'rgba(200,60,45,.45)'; ctx.lineWidth = 1.5; ctx.stroke(rr(0, 0, w, h, 16));
+  // 图标
+  ctx.fillStyle = icol; ctx.fill(rr(20, 18, 40, 40, 10));
+  ctx.fillStyle = '#fff'; ctx.font = '22px SansBold'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ic, 40, 39);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#b9a9a5'; ctx.font = '18px Sans'; ctx.fillText(app, 72, 38);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#857470'; ctx.font = '16px Sans'; ctx.fillText('刚刚', w - 22, 38);
+  if (truthFlip(t)) {
+    ctx.textAlign = 'left'; ctx.fillStyle = '#c8f6ff'; ctx.font = '30px SansBold'; ctx.shadowColor = 'rgba(80,230,255,.9)'; ctx.shadowBlur = 14; ctx.fillText(body, 22, 82);
+    ctx.shadowBlur = 0; ctx.fillStyle = '#7d6a66'; ctx.font = '18px Sans'; ctx.fillText(title, 22, 114);
+    ctx.fillStyle = '#ff5a3a'; ctx.fillRect(18, 113, ctx.measureText(title).width + 8, 2.5);
+  } else {
+    ctx.textAlign = 'left'; ctx.fillStyle = '#ffffff'; ctx.font = '30px SansBold'; ctx.fillText(title, 22, 82);
+    ctx.fillStyle = '#a89591'; ctx.font = '18px Sans'; ctx.fillText(body, 22, 114);
+  }
+  // 红点
+  ctx.fillStyle = '#ff3b2a'; ctx.beginPath(); ctx.arc(58, 20, 7, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function drawWords(t) {
+  const r = rng(5), n = Math.floor(70 * eio(lin(t, 2.2, 8.5)));
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let i = 0; i < 70; i++) {
+    const x0 = r() * W, y0 = r() * H, sz = 22 + r() * 30, t0 = 2.2 + r() * 6.3, red = r(), w = S.words[Math.floor(r() * S.words.length)], sp = r();
+    if (i >= n || t < t0) continue;
+    const age = t - t0, fx = x0 + Math.sin(t * .5 + i) * 15, fy = y0 - age * (8 + sp * 12);
+    const inside = Math.hypot(fx - HC[0], fy - HC[1]) < HR + 20 ? lin(t, T.figure, T.figure + 1.5) : 0;
+    const a = lin(age, 0, .2) * .9 * (1 - inside * .85);
+    ctx.globalAlpha = a; ctx.font = `${sz}px SansBold`;
+    ctx.fillStyle = red < .55 ? '#ff4a32' : (red < .8 ? '#ff8f5a' : '#d8cfcb');
+    ctx.shadowColor = 'rgba(255,40,20,.6)'; ctx.shadowBlur = red < .55 ? 12 : 0;
+    ctx.fillText(w + (sp < .3 ? '！' : ''), fx, fy);
+  }
+  // 单个大字
+  for (let i = 0; i < 26; i++) {
+    const x0 = r() * W, y0 = r() * H, t0 = 1.2 + r() * 7.5, c = S.chars[i % S.chars.length], rot = (r() - .5) * 1.2, sz = 26 + r() * 22;
+    if (t < t0) continue;
+    const age = t - t0;
+    ctx.globalAlpha = lin(age, 0, .2) * .85; ctx.font = `${sz}px SerifBlack`; ctx.fillStyle = '#ff6a50';
+    ctx.shadowColor = 'rgba(255,60,30,.8)'; ctx.shadowBlur = 14;
+    ctx.save(); ctx.translate(x0, y0 + age * 22); ctx.rotate(rot + age * .4); ctx.fillText(c, 0, 0); ctx.restore();
+  }
+  ctx.restore();
+}
+
+// ---------- 红色人像（被欲望填满） ----------
+function flames(t, k) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 11; i++) {
+    const bx = 1305 + i * 15, by = 262 - Math.sin(i / 10 * Math.PI) * 30, hgt = (70 + 110 * Math.sin(i * 2.3 + 1) ** 2) * k * (.85 + .15 * Math.sin(t * 7 + i * 1.9));
+    const sway = noise(t * 3 + i, i) * 26, w = 11 + (i % 3) * 5;
+    const p = new Path2D();
+    p.moveTo(bx - w, by + 20);
+    p.quadraticCurveTo(bx - w * .6 + sway * .4, by - hgt * .5, bx + sway + 20, by - hgt);
+    p.quadraticCurveTo(bx + w * .4 + sway * .3, by - hgt * .45, bx + w, by + 20);
+    const g = ctx.createLinearGradient(0, by + 20, 0, by - hgt);
+    g.addColorStop(0, 'rgba(255,210,120,.85)'); g.addColorStop(.35, 'rgba(255,110,30,.7)'); g.addColorStop(1, 'rgba(200,20,10,0)');
+    ctx.fillStyle = g; ctx.fill(p);
+  }
+  ctx.restore();
+}
+function figureRed(t) {
+  const k = lin(t, T.figure, T.figure + 2.2);
+  if (k <= 0) return;
+  ctx.save();
+  // 光环
+  ctx.globalAlpha = k;
+  ctx.strokeStyle = '#ff5a2a'; ctx.lineWidth = 3; ctx.shadowColor = '#ff3a10'; ctx.shadowBlur = 25;
+  ctx.beginPath(); ctx.arc(HC[0], HC[1], HR - 60, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * eio(k)); ctx.stroke();
+  ctx.fillStyle = `rgba(10,2,2,${.85 * k})`; ctx.beginPath(); ctx.arc(HC[0], HC[1], HR - 62, 0, 7); ctx.fill();
+  // 放射线
+  const r = rng(3); ctx.lineWidth = 1.5; ctx.shadowBlur = 0;
+  for (let i = 0; i < 48; i++) {
+    const a = r() * Math.PI * 2, l = 30 + r() * 90, r0 = HR - 50;
+    ctx.strokeStyle = `rgba(255,90,40,${.5 * k * (.5 + .5 * Math.sin(t * 4 + i))})`;
+    ctx.beginPath(); ctx.moveTo(HC[0] + Math.cos(a) * r0, HC[1] + Math.sin(a) * r0); ctx.lineTo(HC[0] + Math.cos(a) * (r0 + l), HC[1] + Math.sin(a) * (r0 + l)); ctx.stroke();
+  }
+  flames(t, eout(lin(t, T.figure + .8, T.figure + 3)));
+  wings(t, true);
+  // 文字填充
+  ctx.save(); ctx.clip(SIL);
+  ctx.fillStyle = '#080202'; ctx.fillRect(0, 0, W, H);
+  const reveal = lin(t, T.figure + .6, T.figure + 3.4);
+  ctx.globalAlpha = k * .95;
+  ctx.beginPath(); ctx.rect(0, H - (H - 180) * reveal, W, H); ctx.clip();
+  ctx.drawImage(textFill, 0, -((t * 14) % 19));
+  ctx.restore();
+  // 轮廓描边（逐渐画出）
+  ctx.globalAlpha = k; ctx.strokeStyle = '#ff7a3a'; ctx.lineWidth = 3; ctx.shadowColor = '#ff3010'; ctx.shadowBlur = 18;
+  ctx.setLineDash([3200 * eio(k), 4000]); ctx.stroke(SIL); ctx.setLineDash([]);
+  maskRed(t, Math.max(k, earlyMask(t)));
+  // 发光的眼
+  const e = lin(t, T.figure + 1.5, T.figure + 2) * (.75 + .25 * Math.sin(t * 9));
+  const g = ctx.createRadialGradient(1300, 350, 0, 1300, 350, 60);
+  g.addColorStop(0, `rgba(255,240,200,${e})`); g.addColorStop(.15, `rgba(255,120,40,${e * .8})`); g.addColorStop(1, 'rgba(255,40,0,0)');
+  ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(1220, 280, 160, 140);
+  ctx.restore();
+}
+function redGlowEye(t) { // 第一幕早段：黑暗中先亮起一只眼
+  const a = lin(t, .6, 1.6) * (1 - lin(t, T.figure + 1.2, T.figure + 2)) * (.7 + .3 * Math.sin(t * 7));
+  if (a <= 0) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createRadialGradient(1300, 350, 0, 1300, 350, 50);
+  g.addColorStop(0, `rgba(255,230,180,${a})`); g.addColorStop(.2, `rgba(255,90,30,${a * .7})`); g.addColorStop(1, 'rgba(255,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(1240, 290, 120, 120);
+  ctx.globalAlpha = a * .35; ctx.strokeStyle = '#ff4a2a'; ctx.lineWidth = 1.5; ctx.stroke(FACE);
+  ctx.restore();
+  if (t < T.figure) maskRed(t, earlyMask(t));
+}
+
+// ---------- 金色人像 ----------
+function goldGrad(y0, y1) {
+  const g = ctx.createLinearGradient(0, y0, 0, y1);
+  g.addColorStop(0, '#fff4cf'); g.addColorStop(.45, '#f0c060'); g.addColorStop(1, '#a8711f');
+  return g;
+}
+function glowStroke(p, w, blur = 16, col = '#f3c463') {
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.shadowColor = 'rgba(255,190,80,.9)'; ctx.shadowBlur = blur; ctx.stroke(p); ctx.restore();
+  ctx.save(); ctx.strokeStyle = '#fff0c4'; ctx.lineWidth = w * .45; ctx.stroke(p); ctx.restore();
+}
+function halo(t, k) {
+  ctx.save();
+  // 放射光线
+  ctx.globalCompositeOperation = 'lighter';
+  const r = rng(21);
+  for (let i = 0; i < 64; i++) {
+    const a = r() * Math.PI * 2 + t * .02, l = 120 + r() * 500, w = .6 + r() * 1.6, al = (.08 + r() * .22) * k * (.7 + .3 * Math.sin(t * 1.3 + i));
+    const g = ctx.createLinearGradient(HC[0] + Math.cos(a) * 200, HC[1] + Math.sin(a) * 200, HC[0] + Math.cos(a) * (200 + l + 300), HC[1] + Math.sin(a) * (200 + l + 300));
+    g.addColorStop(0, `rgba(255,220,150,${al})`); g.addColorStop(1, 'rgba(255,220,150,0)');
+    ctx.strokeStyle = g; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(HC[0] + Math.cos(a) * 200, HC[1] + Math.sin(a) * 200); ctx.lineTo(HC[0] + Math.cos(a) * (500 + l), HC[1] + Math.sin(a) * (500 + l)); ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  // 光环内部的暖光
+  const gi = ctx.createRadialGradient(HC[0], HC[1] - 40, 0, HC[0], HC[1], HR);
+  gi.addColorStop(0, `rgba(190,150,80,${.55 * k})`); gi.addColorStop(.75, `rgba(80,60,30,${.45 * k})`); gi.addColorStop(1, `rgba(40,30,15,${.2 * k})`);
+  ctx.fillStyle = gi; ctx.beginPath(); ctx.arc(HC[0], HC[1], HR - 40, 0, 7); ctx.fill();
+  // 内部几何花纹
+  ctx.globalAlpha = .22 * k; ctx.strokeStyle = '#e8c27a'; ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + t * .03; ctx.beginPath(); ctx.arc(HC[0] + Math.cos(a) * 150, HC[1] + Math.sin(a) * 150, 150, 0, 7); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(HC[0], HC[1], 150, 0, 7); ctx.stroke();
+  ctx.globalAlpha = k;
+  // 双圈
+  const sweep = eio(lin(k, 0, 1));
+  ctx.lineWidth = 4; ctx.strokeStyle = '#e9b955'; ctx.shadowColor = 'rgba(255,190,80,.9)'; ctx.shadowBlur = 20;
+  ctx.beginPath(); ctx.arc(HC[0], HC[1], HR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * sweep); ctx.stroke();
+  ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(HC[0], HC[1], HR - 42, Math.PI / 2, Math.PI / 2 + Math.PI * 2 * sweep); ctx.stroke();
+  ctx.shadowBlur = 0;
+  // 环上拉丁文
+  ctx.font = '19px Cinzel'; ctx.fillStyle = `rgba(240,200,120,${.85 * k})`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const reps = Math.max(1, Math.round(Math.PI * 2 / .0292 / S.ring.length)), txt = S.ring.repeat(reps), rot = t * .035, rad = HR - 21, step = Math.PI * 2 / txt.length;
+  for (let i = 0; i < txt.length; i++) {
+    const a = -Math.PI / 2 + rot + i * step;
+    ctx.save(); ctx.translate(HC[0] + Math.cos(a) * rad, HC[1] + Math.sin(a) * rad); ctx.rotate(a + Math.PI / 2); ctx.fillText(txt[i], 0, 0); ctx.restore();
+  }
+  // 四个十字圆标
+  for (let i = 0; i < 4; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 2 + rot * .5, x = HC[0] + Math.cos(a) * HR, y = HC[1] + Math.sin(a) * HR;
+    ctx.fillStyle = '#0b0906'; ctx.beginPath(); ctx.arc(x, y, 11, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#f3c463'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawJug(j, t) {
+  ctx.save(); ctx.translate(j.x, j.y); ctx.rotate(j.a); ctx.scale(j.s, j.s);
+  const g = ctx.createLinearGradient(-70, 0, 70, 0);
+  g.addColorStop(0, '#16110a'); g.addColorStop(.5, '#2b2112'); g.addColorStop(1, '#0d0a06');
+  ctx.fillStyle = g; ctx.fill(JUG); ctx.fill(JUG_SPOUT);
+  glowStroke(JUG, 3.2); glowStroke(JUG_SPOUT, 2.6); glowStroke(JUG_HANDLE, 4);
+  // 纹饰
+  const d = new Path2D();
+  d.moveTo(-52, -20); d.quadraticCurveTo(0, -8, 52, -20);
+  d.moveTo(-58, 18); d.quadraticCurveTo(0, 32, 58, 18);
+  d.moveTo(-20, 50); d.quadraticCurveTo(0, 58, 20, 50);
+  glowStroke(d, 1.6, 8);
+  // 中间菱形
+  const m = new Path2D(); m.moveTo(0, -12); m.lineTo(10, 4); m.lineTo(0, 20); m.lineTo(-10, 4); m.closePath();
+  ctx.fillStyle = '#ffe9b0'; ctx.shadowColor = '#ffd27a'; ctx.shadowBlur = 14; ctx.fill(m); ctx.shadowBlur = 0;
+  ctx.restore();
+}
+function stream(t, k) {
+  if (k <= 0) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const p = new Path2D(); p.moveTo(...SPOUT_TIP); p.quadraticCurveTo(...STREAM_CTRL, ...LOWER_MOUTH);
+  ctx.setLineDash([900 * k, 2000]);
+  ctx.strokeStyle = 'rgba(140,210,255,.35)'; ctx.lineWidth = 14; ctx.shadowColor = 'rgba(150,220,255,.9)'; ctx.shadowBlur = 26; ctx.stroke(p);
+  ctx.strokeStyle = 'rgba(220,245,255,.9)'; ctx.lineWidth = 3.5; ctx.shadowBlur = 10; ctx.stroke(p);
+  ctx.setLineDash([]);
+  // 水流中的光点
+  for (let i = 0; i < 26; i++) {
+    const u = ((t * .55 + i / 26) % 1); if (u > k) continue;
+    const [x, y] = streamPt(u), off = Math.sin(i * 7.3 + t * 3) * 5;
+    ctx.fillStyle = `rgba(230,248,255,${.8 * Math.sin(u * Math.PI)})`;
+    ctx.beginPath(); ctx.arc(x + off, y, 2.4, 0, 7); ctx.fill();
+  }
+  // 落点水花
+  if (k >= 1) {
+    for (let i = 0; i < 10; i++) {
+      const ph = (t * 1.6 + i / 10) % 1, a = -Math.PI / 2 + (i - 4.5) * .3;
+      const x = LOWER_MOUTH[0] + Math.cos(a) * ph * 34, y = LOWER_MOUTH[1] - 4 + Math.sin(a) * ph * 30 + ph * ph * 40;
+      ctx.fillStyle = `rgba(210,240,255,${.7 * (1 - ph)})`; ctx.beginPath(); ctx.arc(x, y, 2, 0, 7); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+function figureGold(t, k) {
+  ctx.save();
+  ctx.globalAlpha = k;
+  // 身体剪影
+  const bg = ctx.createLinearGradient(0, 230, 0, 1080);
+  bg.addColorStop(0, '#1d160c'); bg.addColorStop(.5, '#100c07'); bg.addColorStop(1, '#070504');
+  ctx.fillStyle = bg; ctx.fill(SIL);
+  ctx.save(); ctx.clip(SIL);
+  const rim = ctx.createRadialGradient(HC[0] + 60, HC[1] - 80, 0, HC[0] + 60, HC[1] - 80, 420);
+  rim.addColorStop(0, 'rgba(200,150,70,.20)'); rim.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = rim; ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+  glowStroke(SIL, 3.4, 22);
+  // 面纱褶皱
+  const v = new Path2D();
+  v.moveTo(1300, 272); v.bezierCurveTo(1330, 238, 1400, 236, 1432, 282); v.bezierCurveTo(1460, 330, 1462, 420, 1452, 520);
+  v.bezierCurveTo(1446, 580, 1480, 640, 1540, 700);
+  v.moveTo(1420, 300); v.bezierCurveTo(1440, 380, 1430, 470, 1420, 560); v.bezierCurveTo(1430, 620, 1470, 680, 1500, 740);
+  v.moveTo(1390, 300); v.bezierCurveTo(1402, 360, 1402, 430, 1386, 488);
+  glowStroke(v, 2.2, 12);
+  drawHead(t, S.fig.head);
+  drawFace(S.fig.head);
+  // 项链 + 胸前徽章（水滴）
+  const n = new Path2D(); n.moveTo(1300, 578); n.bezierCurveTo(1340, 640, 1440, 640, 1488, 572);
+  glowStroke(n, 2.4, 12);
+  ctx.save(); ctx.translate(1392, 640);
+  ctx.fillStyle = '#0b0906'; ctx.beginPath(); ctx.arc(0, 0, 22, 0, 7); ctx.fill();
+  glowStroke((() => { const p = new Path2D(); p.arc(0, 0, 22, 0, 7); return p; })(), 2.4, 10);
+  drawEmblem(S.fig.emblem);
+  ctx.restore();
+  // 长袍褶皱
+  const r = new Path2D();
+  r.moveTo(1230, 640); r.bezierCurveTo(1250, 760, 1240, 900, 1220, 1080);
+  r.moveTo(1520, 660); r.bezierCurveTo(1520, 800, 1540, 940, 1560, 1080);
+  r.moveTo(1392, 662); r.lineTo(1392, 1080);
+  r.moveTo(1350, 700); r.bezierCurveTo(1335, 820, 1340, 950, 1330, 1080);
+  r.moveTo(1440, 700); r.bezierCurveTo(1455, 820, 1450, 950, 1462, 1080);
+  glowStroke(r, 1.6, 8);
+  // 前臂（举壶） + 后臂（托壶）
+  const arm1 = catmull([[1236, 612], [1168, 668], [1120, 740], [1092, 742], [1060, 690], [1024, 632], [1046, 610], [1086, 656], [1116, 690], [1150, 640], [1200, 600]], true);
+  ctx.fillStyle = '#16110a'; ctx.fill(arm1); glowStroke(arm1, 2.6, 14);
+  const cuff1 = new Path2D(); cuff1.moveTo(1040, 646); cuff1.lineTo(1074, 620); cuff1.moveTo(1050, 662); cuff1.lineTo(1084, 636);
+  glowStroke(cuff1, 1.8, 8);
+  PROPS[S.fig.props](t);
+  ctx.restore();
+}
+
+// ---------- 碎片转场 ----------
+const SHARDS = (() => {
+  const r = rng(42), a = [];
+  for (let i = 0; i < 260; i++) {
+    const x = 1060 + r() * 600, y = 160 + r() * 900, ang = Math.atan2(y - HC[1], x - HC[0]) + (r() - .5) * 1.4;
+    a.push({ x, y, vx: Math.cos(ang) * (200 + r() * 900) - 260, vy: Math.sin(ang) * (200 + r() * 700) - 120, s: 6 + r() * 22, rot: r() * 6, vr: (r() - .5) * 8, ch: r() < .35 ? S.chars[i % S.chars.length] : null, gold: r() });
+  }
+  return a;
+})();
+function shards(t) {
+  const age = t - T.flash; if (age < 0 || age > 3.2) return;
+  ctx.save();
+  for (const s of SHARDS) {
+    const dt = age, x = s.x + s.vx * dt * (1 - dt * .12), y = s.y + s.vy * dt + 40 * dt * dt, a = clamp(1 - dt / 3) * clamp(dt * 8);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(s.rot + s.vr * dt); ctx.globalAlpha = a;
+    const c = s.gold < .7 ? '#f6d48a' : (s.gold < .9 ? '#fff2cf' : '#c9902f');
+    ctx.fillStyle = c; ctx.shadowColor = 'rgba(255,200,90,.8)'; ctx.shadowBlur = 10;
+    if (s.ch) { ctx.font = `${s.s * 1.2}px SerifBlack`; ctx.fillText(s.ch, 0, 0); }
+    else { ctx.beginPath(); ctx.moveTo(0, -s.s * .6); ctx.lineTo(s.s * .5, s.s * .1); ctx.lineTo(-s.s * .2, s.s * .5); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+  }
+  // 冲击光圈
+  const rad = 200 + eout(lin(age, 0, 1.4)) * 1300;
+  ctx.globalAlpha = .7 * (1 - lin(age, 0, 1.4)); ctx.strokeStyle = '#f3c463'; ctx.lineWidth = 3; ctx.shadowColor = '#ffcf70'; ctx.shadowBlur = 20;
+  ctx.beginPath(); ctx.arc(HC[0], HC[1], rad, 0, 7); ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- 标题 ----------
+function titleBlock(t) {
+  ctx.save();
+  const x0 = 110;
+  // 标签框
+  const a1 = eout(lin(t, T.tag, T.tag + .5));
+  if (a1 > 0) {
+    ctx.globalAlpha = a1; ctx.translate(-20 * (1 - a1), 0);
+    ctx.font = '30px Sans'; ctx.textBaseline = 'middle';
+    const tag = S.tag.split(''), tw = tag.reduce((s, c) => s + ctx.measureText(c).width + 6, 0) + 50;
+    ctx.strokeStyle = 'rgba(232,200,140,.75)'; ctx.lineWidth = 1.6; ctx.stroke(rr(x0, 338, tw, 64, 6));
+    ctx.fillStyle = 'rgba(10,8,5,.6)'; ctx.fill(rr(x0, 338, tw, 64, 6));
+    ctx.fillStyle = '#f3ead8'; let x = x0 + 28;
+    for (const c of tag) { ctx.fillText(c, x, 371); x += ctx.measureText(c).width + 6; }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  // 设问
+  const q = S.question, full = q.join(''), nq = Math.floor(full.length * lin(t, T.question, T.question + .9) + .001);
+  if (nq > 0) {
+    ctx.globalAlpha = 1; ctx.font = '52px SerifBold'; ctx.textBaseline = 'alphabetic';
+    const qw = ctx.measureText(q[0] + '「' + q[1] + '」' + q[2]).width;
+    if (qw > 780) ctx.font = `${Math.floor(52 * 780 / qw)}px SerifBold`;
+    ctx.shadowColor = 'rgba(255,220,150,.5)'; ctx.shadowBlur = 14;
+    let x = x0, idx = 0;
+    const seg = [[q[0], '#fbf3e2'], ['「', '#fbf3e2'], [q[1], '#ffd27a'], ['」', '#fbf3e2'], [q[2], '#fbf3e2']];
+    const shown = nq + (nq > q[0].length ? 1 : 0) + (nq > q[0].length + q[1].length ? 1 : 0);
+    for (const [s, col] of seg) for (const c of s) {
+      if (idx++ >= shown) break;
+      ctx.fillStyle = col; ctx.fillText(c, x, 482); x += ctx.measureText(c).width;
+    }
+  }
+  // 大标题
+  const a3 = lin(t, T.title, T.title + .7);
+  if (a3 > 0) {
+    const s = mix(1.18, 1, eout(a3));
+    ctx.save(); ctx.translate(x0, 700); ctx.scale(s, s); ctx.globalAlpha = eout(a3);
+    ctx.font = '236px SerifBlack'; ctx.textBaseline = 'alphabetic';
+    ctx.shadowColor = 'rgba(255,170,60,.75)'; ctx.shadowBlur = 50 + 40 * (1 - a3);
+    const g = ctx.createLinearGradient(0, -200, 0, 20);
+    g.addColorStop(0, '#fff7da'); g.addColorStop(.45, '#f6c867'); g.addColorStop(1, '#b8781e');
+    ctx.fillStyle = g; ctx.fillText(S.title, 0, 0);
+    ctx.shadowBlur = 0; ctx.globalCompositeOperation = 'lighter';
+    // 扫光
+    const sx = mix(-300, 900, lin(t, T.title + .3, T.title + 1.5)), sg = ctx.createLinearGradient(sx - 120, 0, sx + 120, 0);
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(.5, 'rgba(255,250,230,.55)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sg; ctx.fillText(S.title, 0, 0);
+    ctx.restore();
+  }
+  // 拉丁文
+  const L = S.latin;
+  ctx.font = 'italic 36px Cinzel'; ctx.textBaseline = 'alphabetic'; ctx.shadowBlur = 0;
+  let x = x0 + 6;
+  for (let i = 0; i < L.length; i++) {
+    const a = lin(t, T.latin + i * .035, T.latin + i * .035 + .35);
+    ctx.globalAlpha = a; ctx.fillStyle = '#efe2c6';
+    ctx.fillText(L[i], x, 790); x += ctx.measureText(L[i]).width + 11;
+  }
+  ctx.restore();
+}
+
+// ---------- 主函数：无状态，按时间绘制 ----------
+window.renderAt = function (t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none';
+  if (t < T.flash) {
+    // 第一幕
+    const zoom = 1 + .06 * eio(lin(t, 0, T.flash)), shake = lin(t, 5.5, 8.6) * 7 + lin(t, T.slash, T.slash + .05) * 18;
+    const sx = noise(t * 23, 1) * shake, sy = noise(t * 19, 4) * shake;
+    ctx.save();
+    if (t > T.grey) ctx.filter = `grayscale(${lin(t, T.grey, T.grey + .2)}) brightness(${1 - .35 * lin(t, T.grey, T.grey + .2)})`;
+    ctx.translate(W / 2 + sx, H / 2 + sy); ctx.scale(zoom, zoom); ctx.translate(-W / 2, -H / 2);
+    bgRed(t, lin(t, .2, 1.5));
+    redGlowEye(t);
+    figureRed(t);
+    drawWords(t);
+    S.cards.forEach((c, i) => drawCard(c, t, i));
+    embers(t); cracks(t);
+    bokeh(t, true);
+    ctx.restore(); ctx.filter = 'none';
+    vignette(.85);
+    pulse(t); scanlines(.08); glitch(t);
+    // 斜斩
+    const sk = lin(t, T.slash, T.slash + .3);
+    if (sk > 0) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const ax = 1000, ay = 1050, bx = 1700, by = 80, e = eout(sk);
+      const ex = mix(ax, bx, e), ey = mix(ay, by, e);
+      ctx.strokeStyle = '#fff6dc'; ctx.lineWidth = 5; ctx.shadowColor = '#ffd27a'; ctx.shadowBlur = 30;
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ex, ey); ctx.stroke();
+      ctx.lineWidth = 22; ctx.strokeStyle = 'rgba(255,220,150,.25)'; ctx.stroke();
+      ctx.restore();
+    }
+    splitFrame(t);
+    const fl = lin(t, T.flash - .06, T.flash);
+    if (fl > 0) { ctx.fillStyle = `rgba(255,248,230,${fl})`; ctx.fillRect(0, 0, W, H); }
+  } else {
+    // 第二幕
+    const zoom = 1.04 - .04 * eout(lin(t, T.flash, T.flash + 2.5)) + .015 * lin(t, 13, 24);
+    const shake = 10 * (1 - lin(t, T.flash, T.flash + .6));
+    ctx.save();
+    ctx.translate(W / 2 + noise(t * 25, 2) * shake, H / 2 + noise(t * 21, 5) * shake); ctx.scale(zoom, zoom); ctx.translate(-W / 2, -H / 2);
+    bgGold(t);
+    godRays(t, eout(lin(t, T.flash, T.flash + 2)));
+    halo(t, eout(lin(t, T.flash, T.flash + 1.6)));
+    orbitSparks(t, lin(t, T.flash + .5, T.flash + 2));
+    wings(t, false);
+    figureGold(t, eout(lin(t, T.flash - .05, T.flash + .5)));
+    angelRing(t, eout(lin(t, T.flash + .4, T.flash + 1.4)));
+    featherRain(t, lin(t, T.flash + .8, T.flash + 3));
+    shards(t);
+    maskShards(t);
+    featherBurst(t);
+    bokeh(t, false);
+    ctx.restore();
+    lightSweep(t);
+    vignette(.7);
+    titleBlock(t);
+    titleSparks(t);
+    flare(HC[0], HC[1] - 40, 1 - lin(t, T.flash, T.flash + 1.4));
+    flare(360, 640, Math.sin(Math.PI * lin(t, T.title + .1, T.title + 1)) * .8, 700);
+    flare(1362, 196, (.25 + .15 * Math.sin(t * 2.2)) * lin(t, T.flash + .8, T.flash + 1.8), 320);
+    const fl = 1 - lin(t, T.flash, T.flash + .7);
+    if (fl > 0) { ctx.fillStyle = `rgba(255,248,230,${fl * fl})`; ctx.fillRect(0, 0, W, H); }
+  }
+  grain(t);
+  const fo = lin(t, T.fadeOut, S.duration - .1) + (1 - lin(t, 0, .35));
+  if (fo > 0) { ctx.fillStyle = `rgba(0,0,0,${clamp(fo)})`; ctx.fillRect(0, 0, W, H); }
+};
+
+window.ready = (async () => {
+  await document.fonts.load('20px SerifBlack', '诚实'); await document.fonts.load('20px SerifBold', '明');
+  await document.fonts.load('20px SansBold', '刷'); await document.fonts.load('20px Sans', '刷');
+  await document.fonts.load('20px Cinzel', 'A'); await document.fonts.load('italic 20px Cinzel', 'A');
+  await document.fonts.ready;
+  buildTextFill();
+  return true;
+})();
+</script>
+<script src="angel.js"></script>
+<script src="honesty.js"></script>
+</body></html>

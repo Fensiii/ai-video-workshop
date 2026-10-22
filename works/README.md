@@ -7,6 +7,7 @@
 |---|---|---|---|---|
 | `2026-10-17_bitcoin-2010-2026/` | `bitcoin_2010-2026_16x9.mp4` | 3:14 | 1920×1080 30fps | 比特币 2010–2026 走势，一比一复刻 `references/data-history/nasdaq-55y.mp4`；只有合成音效；含镜头晃动、推近和图上标注。生成脚本在 `src/`，经验见 skill `data-history-video` |
 | `2026-10-17_song-mv-duanfa/` | `duanfa-girl-mv_16x9.mp4` | 1:10 | 1920×1080 | 《幻昼》×《短发女孩》×《take me hand》混剪，带歌词字幕；`lyrics.ass` / `lyrics.lrc` 为歌词时间轴 |
+| `2026-10-22_virtue-honesty/` | `virtue-honesty_16x9.mp4` | 0:25 | 1920×1080 30fps | 美德·诚实（单支，画面不写“七美德”），照七美德天使篇结构：微笑面具 + 卡片闪出真相 → 面具裂开 → 刀痕劈开画面 → 金色天使手托真理之光、碎面具落在脚边 + 标题卡；加了景深光斑、扫光、胶片颗粒；音效配乐全合成。HTML Canvas + Playwright，代码在 `src/`，文案在 `captions.md` |
 
 ## 不在库里的旧作品
 

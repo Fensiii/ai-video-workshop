@@ -15,6 +15,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 特斯拉，凭什么？（无配音） | `tesla-evolution-explainer` / `tesla-success/` | 2分38秒、字幕 + 合成配乐 | Canvas/DOM + Playwright + numpy 配乐 |
 | 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
+| 美德·诚实 | `works/2026-10-22_virtue-honesty/`（成片 + `src/`；底子是 `claude/seven-virtues-temperance` 分支的七美德天使篇引擎） | 25秒两幕反转短片、合成音效配乐 | HTML Canvas + Playwright + numpy 音效 |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。
@@ -106,6 +107,14 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 详见 `data-history-video`。要点：数据从 Coin Metrics GitHub CSV 取（有半年延迟）；
 到事件时减速；暴跌/黑天鹅镜头冲击晃动（7–16Hz），震荡行情手持晃动；
 重要节点推近放大 + 锁定框、价格日期标签、ATH 虚线、涨跌测量箭头；音效全合成。
+
+### 6. 美德·诚实（七美德天使篇引擎的单支扩展）
+- 用户说“不要写七美德”：标签、光环刻字、文案、话题里都不能出现，标签改成「美德 · 以诚待人」，光环刻 `VERITAS LIBERABIT VOS`。
+- 光环刻字要按整数遍数均分一圈（`step = 2π / (遍数 × 字数)`），否则短文案会绕不满或断在半个单词。
+- 每支要有一个贯穿两幕的意象：诚实 = 面具（第一幕戴在脸上、裂开透光 → 转场碎掉 → 第二幕碎成两半落在脚边）。
+- 新特效都放进单独的 `honesty.js`，在 `index.html` 只加挂点：卡片在撕裂帧闪出真相（副标题变主标题、原话划掉）、
+  斜斩后把整帧沿刀痕劈成两半错开（先拷到离屏 canvas，再分两次 clip 绘制，整体放大 1.2 防露边）、
+  前景光斑（预渲染光斑精灵，第二幕避开标题区）、斜向扫光、胶片颗粒（512 噪声图 pattern + overlay，每帧随机偏移）。
 
 ## 五、用户偏好（已确认过的）
 

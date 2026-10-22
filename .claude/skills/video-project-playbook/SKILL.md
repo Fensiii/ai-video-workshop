@@ -16,6 +16,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
 | 美德·诚实 | `works/2026-10-22_virtue-honesty/`（成片 + `src/`；引擎拆成通用 `fx.js` + 人物文件 `figures/puppet.js`） | 25秒两幕反转短片、合成音效配乐 | HTML Canvas + Playwright + numpy 音效；做法见 skill `virtue-shorts` |
+| 美德·自律 | `works/2026-10-22_virtue-discipline/`（成片 + `src/`；最新引擎，新增玻璃破碎转场，人物 `figures/athlete.js`） | 25秒两幕反转短片、胖子 → 肌肉男、破碎转场 | 同上；做法见 skill `virtue-shorts` |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。
@@ -112,6 +113,10 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 详见 skill `virtue-shorts`。要点：用户说“不要写七美德”“别每次都用天使，按主题画合适的人物”；
 人物要有贯穿两幕的意象，斜斩要斩到它（诚实：斩断提线）；引擎拆成通用 `fx.js` + `figures/<人物>.js`，
 人物专属音效用 `FIG.events` 导出给 `audio.py`。画人物时用 ffmpeg crop 放大头部检查，头发别画成一团、脖子要有下颌线。
+
+### 7. 美德·自律（胖子 → 肌肉男，玻璃破碎）
+详见 skill `virtue-shorts`。要点：用户点名“从胖子到肌肉男、破碎转场、高质量高特效”；手机既是第一幕的标志物（黑暗里先亮、卡片从里面飞出），
+也是玻璃的撞击点；体型变化用对应控制点的轮廓插值 + 骨骼插值；canvas 别用 `ctx.filter` 做去色（一帧 16 秒）。
 
 ## 五、用户偏好（已确认过的）
 

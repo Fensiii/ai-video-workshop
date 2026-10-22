@@ -1,0 +1,384 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:SerifBlack;src:url(fonts/NotoSerifSC_900Black.ttf)}
+@font-face{font-family:SerifBold;src:url(fonts/NotoSerifSC_700Bold.ttf)}
+@font-face{font-family:SansBold;src:url(fonts/NotoSansSC_700Bold.ttf)}
+@font-face{font-family:Sans;src:url(fonts/NotoSansSC_400Regular.ttf)}
+@font-face{font-family:Cinzel;src:url(fonts/Cinzel_400Regular.ttf)}
+@font-face{font-family:CinzelBold;src:url(fonts/Cinzel_700Bold.ttf)}
+html,body{margin:0;background:#000;overflow:hidden}
+canvas{display:block}
+</style>
+<!-- 文案：stories/<v>.js；人物：figures/<STORY.figure>.js（定义 FIG） -->
+<script>window.VIRTUE = new URLSearchParams(location.search).get('v') || 'honesty';
+document.write('<script src="stories/' + window.VIRTUE + '.js"><\/script>');</script>
+</head><body>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>
+// 美德短片引擎：两幕反转（红色"罪" → 转场 → 金色"德" + 标题卡）。renderAt(t) 无状态。
+// 转场 S.transition：'slash' 金光斜斩劈开（默认，七美德系列）/ 'shatter' 玻璃破碎（撞击点 FIG.IMPACT，见 fx.js）。
+const W = 1920, H = 1080, S = window.STORY, T = S.t;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const HC = [1330, 430], HR = 345;           // 人物背后的光环（人物统一面朝左、站在画面右侧）
+
+// ---------- 工具 ----------
+function rng(seed) { return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lin = (t, a, b) => clamp((t - a) / (b - a));
+const eio = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const eout = x => 1 - Math.pow(1 - x, 3);
+const eback = x => { const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const mix = (a, b, k) => a + (b - a) * k;
+const noise = (x, s) => Math.sin(x * 1.7 + s) * .5 + Math.sin(x * 3.1 + s * 2.3) * .3 + Math.sin(x * 5.3 + s * .7) * .2;
+function catmullPts(pts, closed, per = 8, tension = 0.5) { // 与 catmull() 同一条曲线，按每段 per 个点采样（做轮廓变形用）
+  const n = pts.length, out = [], k = tension / 3;
+  const g = i => closed ? pts[(i + n) % n] : pts[clamp(i, 0, n - 1)];
+  const m = closed ? n : n - 1;
+  for (let i = 0; i < m; i++) {
+    const p0 = g(i - 1), p1 = g(i), p2 = g(i + 1), p3 = g(i + 2);
+    const c1 = [p1[0] + (p2[0] - p0[0]) * k, p1[1] + (p2[1] - p0[1]) * k], c2 = [p2[0] - (p3[0] - p1[0]) * k, p2[1] - (p3[1] - p1[1]) * k];
+    for (let j = 0; j < per; j++) {
+      const u = j / per, v = 1 - u;
+      out.push([v * v * v * p1[0] + 3 * v * v * u * c1[0] + 3 * v * u * u * c2[0] + u * u * u * p2[0], v * v * v * p1[1] + 3 * v * v * u * c1[1] + 3 * v * u * u * c2[1] + u * u * u * p2[1]]);
+    }
+  }
+  if (!closed) out.push(pts[n - 1]);
+  return out;
+}
+function poly(pts, closed = true) { const p = new Path2D(); p.moveTo(...pts[0]); for (let i = 1; i < pts.length; i++) p.lineTo(...pts[i]); if (closed) p.closePath(); return p; }
+function catmull(pts, closed, tension = 0.5) {
+  const p = new Path2D(), n = pts.length;
+  const g = i => closed ? pts[(i + n) % n] : pts[clamp(i, 0, n - 1)];
+  p.moveTo(pts[0][0], pts[0][1]);
+  const m = closed ? n : n - 1;
+  for (let i = 0; i < m; i++) {
+    const p0 = g(i - 1), p1 = g(i), p2 = g(i + 1), p3 = g(i + 2), k = tension / 3;
+    p.bezierCurveTo(p1[0] + (p2[0] - p0[0]) * k, p1[1] + (p2[1] - p0[1]) * k, p2[0] - (p3[0] - p1[0]) * k, p2[1] - (p3[1] - p1[1]) * k, p2[0], p2[1]);
+  }
+  if (closed) p.closePath();
+  return p;
+}
+function rr(x, y, w, h, r) { const p = new Path2D(); p.roundRect(x, y, w, h, r); return p; }
+function circ(x, y, r) { const p = new Path2D(); p.arc(x, y, r, 0, Math.PI * 2); return p; }
+function rot(p, c, a) { const s = Math.sin(a), k = Math.cos(a); return [c[0] + (p[0] - c[0]) * k - (p[1] - c[1]) * s, c[1] + (p[0] - c[0]) * s + (p[1] - c[1]) * k]; }
+function limb(a, b, w1, w2) { // 两端圆头的锥形肢体
+  const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy), ang = Math.atan2(dy, dx), p = new Path2D();
+  p.arc(a[0], a[1], w1 / 2, ang + Math.PI / 2, ang - Math.PI / 2); p.arc(b[0], b[1], w2 / 2, ang - Math.PI / 2, ang + Math.PI / 2); p.closePath();
+  return p;
+}
+
+// ---------- 笔触：金色线描 / 强调色 ----------
+function glowStroke(p, w, blur = 16, col = '#f3c463') {
+  ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = w; ctx.shadowColor = 'rgba(255,190,80,.9)'; ctx.shadowBlur = blur; ctx.stroke(p); ctx.restore();
+  ctx.save(); ctx.strokeStyle = '#fff0c4'; ctx.lineWidth = w * .45; ctx.stroke(p); ctx.restore();
+}
+function redStroke(p, w, blur = 14) {
+  ctx.save(); ctx.strokeStyle = '#ff7a3a'; ctx.lineWidth = w; ctx.shadowColor = '#ff3010'; ctx.shadowBlur = blur; ctx.stroke(p); ctx.restore();
+  ctx.save(); ctx.strokeStyle = 'rgba(255,220,190,.8)'; ctx.lineWidth = w * .35; ctx.stroke(p); ctx.restore();
+}
+const AC = () => S.fig.accent, AG = () => S.fig.glow;
+function accentFill(p, blur = 14) { ctx.save(); ctx.fillStyle = AC(); ctx.shadowColor = AG(); ctx.shadowBlur = blur; ctx.fill(p); ctx.restore(); }
+function accentStroke(p, w = 2, blur = 10) { ctx.save(); ctx.strokeStyle = AC(); ctx.lineWidth = w; ctx.shadowColor = AG(); ctx.shadowBlur = blur; ctx.stroke(p); ctx.restore(); }
+function darkFill(p, col = '#14100a') { ctx.save(); ctx.fillStyle = col; ctx.fill(p); ctx.restore(); }
+
+// ---------- 预渲染：文字填充（人物身体里塞满“罪”的话） ----------
+const textFill = document.createElement('canvas'); textFill.width = W; textFill.height = H;
+function buildTextFill() {
+  const g = textFill.getContext('2d'), r = rng(7);
+  g.font = '15px SansBold'; g.textBaseline = 'middle';
+  for (let y = 150; y < H + 20; y += 19) {
+    let x = 900 + (y * 7 % 40) - 40;
+    while (x < 1780) {
+      const w = S.words[Math.floor(r() * S.words.length)] + ' · ';
+      g.fillStyle = r() < .3 ? '#ff8a3d' : (r() < .5 ? '#ff3b2a' : '#c8231c');
+      g.fillText(w, x, y); x += g.measureText(w).width;
+    }
+  }
+}
+function fillWithText(path, t, reveal, a) { // 人物剪影里滚动的文字，从下往上填满
+  ctx.save(); ctx.clip(path);
+  ctx.fillStyle = '#080202'; ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = a; ctx.beginPath(); ctx.rect(0, H - (H - 150) * reveal, W, H); ctx.clip();
+  ctx.drawImage(textFill, 0, -((t * 14) % 19));
+  ctx.restore();
+}
+
+// ---------- 背景 ----------
+function bgRed(t, k) {
+  ctx.fillStyle = '#060202'; ctx.fillRect(0, 0, W, H);
+  const pul = 0.75 + 0.25 * Math.sin(t * 5.5) * lin(t, 3, 8), r = mix(260, 620, eout(lin(t, 0, 8)));
+  const g = ctx.createRadialGradient(HC[0], HC[1] + 40, 0, HC[0], HC[1] + 40, r * 1.4);
+  g.addColorStop(0, `rgba(170,18,12,${0.75 * k * pul})`); g.addColorStop(.45, `rgba(90,6,6,${0.45 * k})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+}
+function bgGold(t) {
+  ctx.fillStyle = '#060504'; ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(HC[0], HC[1], 0, HC[0], HC[1], 900);
+  g.addColorStop(0, 'rgba(120,92,40,.55)'); g.addColorStop(.35, 'rgba(50,38,18,.35)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const r = rng(11);
+  for (let i = 0; i < 140; i++) {
+    const x = r() * W, y = (r() * H - t * (6 + r() * 14) + H * 4) % H, a = (.15 + r() * .5) * (.6 + .4 * Math.sin(t * 2 + i));
+    ctx.fillStyle = `rgba(255,225,160,${a})`; ctx.fillRect(x, y, 1.6, 1.6);
+  }
+}
+
+// ---------- 第一幕：推送卡片、漂浮字 ----------
+function drawCard(c, t, i) {
+  const [t0, x, y, rotd, sc, app, ic, icol, title, body] = c;
+  const age = t - t0; if (age < 0) return;
+  const from = typeof FIG !== 'undefined' && FIG.cardFrom, fly = from ? eout(lin(age, 0, .38)) : 1;
+  const pop = eback(lin(age, 0, .28)), s = sc * (1 + age * .025) * (from ? mix(.1, 1, eback(lin(age, 0, .38))) : mix(1.25, 1, pop));
+  const a = lin(age, 0, .12) * (1 - lin(t, T.grey + .3, T.flash) * .4), w = 430, h = 132;
+  let dx = Math.sin(t * .7 + i) * 6 + (x > 960 ? 1 : -1) * age * 4, dy = -age * 3 + Math.cos(t * .6 + i) * 4;
+  { const cx = x + w / 2 - HC[0], cy = y + h / 2 - HC[1], d = Math.hypot(cx, cy) || 1, push = eio(lin(t, T.figure - .2, T.figure + 2.4)) * Math.max(0, 760 - d) * .9;
+    dx += cx / d * push; dy += cy / d * push * .6;
+    for (const [ax, ay, ar] of (typeof FIG !== 'undefined' && FIG.cardAvoid) || []) { // 人物文件可以再指定几处要让开的区域
+      const ex = x + w / 2 - ax, ey = y + h / 2 - ay, e = Math.hypot(ex, ey) || 1, pp = eio(lin(t, T.figure - .2, T.figure + 2.4)) * Math.max(0, ar - e) * .8;
+      dx += ex / e * pp; dy += ey / e * pp; } }
+  let px = x + w / 2 + dx, py = y + h / 2 + dy;
+  if (fly < 1) { // 从手机里飞出来：拖一道光尾
+    const fx0 = from[0], fy0 = from[1]; px = mix(fx0, px, fly); py = mix(fy0, py, fly);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createLinearGradient(fx0, fy0, px, py); g.addColorStop(0, 'rgba(120,230,255,0)'); g.addColorStop(1, `rgba(170,240,255,${.55 * (1 - fly)})`);
+    ctx.strokeStyle = g; ctx.lineWidth = 3 + 10 * (1 - fly); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(mix(fx0, px, .35), mix(fy0, py, .35)); ctx.lineTo(px, py); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.save(); ctx.globalAlpha = a;
+  ctx.translate(px, py); ctx.rotate(rotd * Math.PI / 180 * fly); ctx.scale(s, s);
+  ctx.transform(1, 0, Math.sin(i) * .08, 1, 0, 0); ctx.translate(-w / 2, -h / 2);
+  ctx.shadowColor = 'rgba(0,0,0,.7)'; ctx.shadowBlur = 30; ctx.shadowOffsetY = 10;
+  ctx.fillStyle = 'rgba(26,14,13,.94)'; ctx.fill(rr(0, 0, w, h, 16));
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = 'rgba(200,60,45,.45)'; ctx.lineWidth = 1.5; ctx.stroke(rr(0, 0, w, h, 16));
+  ctx.fillStyle = icol; ctx.fill(rr(20, 18, 40, 40, 10));
+  ctx.fillStyle = '#fff'; ctx.font = '22px SansBold'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(ic, 40, 39);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#b9a9a5'; ctx.font = '18px Sans'; ctx.fillText(app, 72, 38);
+  ctx.textAlign = 'right'; ctx.fillStyle = '#857470'; ctx.font = '16px Sans'; ctx.fillText('刚刚', w - 22, 38);
+  if (S.truthFlip && truthFlip(t)) { // 撕裂的一瞬：副标题（真相）变主标题，原话被划掉
+    ctx.textAlign = 'left'; ctx.fillStyle = '#c8f6ff'; ctx.font = '30px SansBold'; ctx.shadowColor = 'rgba(80,230,255,.9)'; ctx.shadowBlur = 14; ctx.fillText(body, 22, 82);
+    ctx.shadowBlur = 0; ctx.fillStyle = '#7d6a66'; ctx.font = '18px Sans'; ctx.fillText(title, 22, 114);
+    ctx.fillStyle = '#ff5a3a'; ctx.fillRect(18, 113, ctx.measureText(title).width + 8, 2.5);
+  } else {
+    ctx.textAlign = 'left'; ctx.fillStyle = '#ffffff'; ctx.font = '30px SansBold'; ctx.fillText(title, 22, 82);
+    ctx.fillStyle = '#a89591'; ctx.font = '18px Sans'; ctx.fillText(body, 22, 114);
+  }
+  ctx.fillStyle = '#ff3b2a'; ctx.beginPath(); ctx.arc(58, 20, 7, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function drawWords(t) {
+  const r = rng(5), n = Math.floor(70 * eio(lin(t, 2.2, 8.5)));
+  ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let i = 0; i < 70; i++) {
+    const x0 = r() * W, y0 = r() * H, sz = 22 + r() * 30, t0 = 2.2 + r() * 6.3, red = r(), w = S.words[Math.floor(r() * S.words.length)], sp = r();
+    if (i >= n || t < t0) continue;
+    const age = t - t0, fx = x0 + Math.sin(t * .5 + i) * 15, fy = y0 - age * (8 + sp * 12);
+    const inside = Math.hypot(fx - HC[0], fy - HC[1]) < HR + 20 ? lin(t, T.figure, T.figure + 1.5) : 0;
+    ctx.globalAlpha = lin(age, 0, .2) * .9 * (1 - inside * .85); ctx.font = `${sz}px SansBold`;
+    ctx.fillStyle = red < .55 ? '#ff4a32' : (red < .8 ? '#ff8f5a' : '#d8cfcb');
+    ctx.shadowColor = 'rgba(255,40,20,.6)'; ctx.shadowBlur = red < .55 ? 12 : 0;
+    ctx.fillText(w + (sp < .3 ? '！' : ''), fx, fy);
+  }
+  for (let i = 0; i < 26; i++) { // 单个大字
+    const x0 = r() * W, y0 = r() * H, t0 = 1.2 + r() * 7.5, c = S.chars[i % S.chars.length], rt = (r() - .5) * 1.2, sz = 26 + r() * 22;
+    if (t < t0) continue;
+    const age = t - t0;
+    ctx.globalAlpha = lin(age, 0, .2) * .85; ctx.font = `${sz}px SerifBlack`; ctx.fillStyle = '#ff6a50';
+    ctx.shadowColor = 'rgba(255,60,30,.8)'; ctx.shadowBlur = 14;
+    ctx.save(); ctx.translate(x0, y0 + age * 22); ctx.rotate(rt + age * .4); ctx.fillText(c, 0, 0); ctx.restore();
+  }
+  ctx.restore();
+}
+function redRing(t, k) { // 人物背后的红色光环 + 放射线
+  if (k <= 0) return;
+  ctx.save(); ctx.globalAlpha = k;
+  ctx.strokeStyle = '#ff5a2a'; ctx.lineWidth = 3; ctx.shadowColor = '#ff3a10'; ctx.shadowBlur = 25;
+  ctx.beginPath(); ctx.arc(HC[0], HC[1], HR - 60, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * eio(k)); ctx.stroke();
+  ctx.fillStyle = `rgba(10,2,2,${.85 * k})`; ctx.beginPath(); ctx.arc(HC[0], HC[1], HR - 62, 0, 7); ctx.fill();
+  const r = rng(3); ctx.lineWidth = 1.5; ctx.shadowBlur = 0;
+  for (let i = 0; i < 48; i++) {
+    const a = r() * Math.PI * 2, l = 30 + r() * 90, r0 = HR - 50;
+    ctx.strokeStyle = `rgba(255,90,40,${.5 * k * (.5 + .5 * Math.sin(t * 4 + i))})`;
+    ctx.beginPath(); ctx.moveTo(HC[0] + Math.cos(a) * r0, HC[1] + Math.sin(a) * r0); ctx.lineTo(HC[0] + Math.cos(a) * (r0 + l), HC[1] + Math.sin(a) * (r0 + l)); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---------- 第二幕：金色光环（刻字） ----------
+function halo(t, k) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  const r = rng(21);
+  for (let i = 0; i < 64; i++) {
+    const a = r() * Math.PI * 2 + t * .02, l = 120 + r() * 500, w = .6 + r() * 1.6, al = (.08 + r() * .22) * k * (.7 + .3 * Math.sin(t * 1.3 + i));
+    const g = ctx.createLinearGradient(HC[0] + Math.cos(a) * 200, HC[1] + Math.sin(a) * 200, HC[0] + Math.cos(a) * (200 + l + 300), HC[1] + Math.sin(a) * (200 + l + 300));
+    g.addColorStop(0, `rgba(255,220,150,${al})`); g.addColorStop(1, 'rgba(255,220,150,0)');
+    ctx.strokeStyle = g; ctx.lineWidth = w;
+    ctx.beginPath(); ctx.moveTo(HC[0] + Math.cos(a) * 200, HC[1] + Math.sin(a) * 200); ctx.lineTo(HC[0] + Math.cos(a) * (500 + l), HC[1] + Math.sin(a) * (500 + l)); ctx.stroke();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  const gi = ctx.createRadialGradient(HC[0], HC[1] - 40, 0, HC[0], HC[1], HR);
+  gi.addColorStop(0, `rgba(190,150,80,${.55 * k})`); gi.addColorStop(.75, `rgba(80,60,30,${.45 * k})`); gi.addColorStop(1, `rgba(40,30,15,${.2 * k})`);
+  ctx.fillStyle = gi; ctx.beginPath(); ctx.arc(HC[0], HC[1], HR - 40, 0, 7); ctx.fill();
+  ctx.globalAlpha = .22 * k; ctx.strokeStyle = '#e8c27a'; ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + t * .03; ctx.beginPath(); ctx.arc(HC[0] + Math.cos(a) * 150, HC[1] + Math.sin(a) * 150, 150, 0, 7); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(HC[0], HC[1], 150, 0, 7); ctx.stroke();
+  ctx.globalAlpha = k;
+  const sweep = eio(lin(k, 0, 1));
+  ctx.lineWidth = 4; ctx.strokeStyle = '#e9b955'; ctx.shadowColor = 'rgba(255,190,80,.9)'; ctx.shadowBlur = 20;
+  ctx.beginPath(); ctx.arc(HC[0], HC[1], HR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * sweep); ctx.stroke();
+  ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(HC[0], HC[1], HR - 42, Math.PI / 2, Math.PI / 2 + Math.PI * 2 * sweep); ctx.stroke();
+  ctx.shadowBlur = 0;
+  // 环上刻字：整数遍均分一圈
+  ctx.font = '19px Cinzel'; ctx.fillStyle = `rgba(240,200,120,${.85 * k})`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const reps = Math.max(1, Math.round(Math.PI * 2 / .0292 / S.ring.length)), txt = S.ring.repeat(reps), rt = t * .035, rad = HR - 21, step = Math.PI * 2 / txt.length;
+  for (let i = 0; i < txt.length; i++) {
+    const a = -Math.PI / 2 + rt + i * step;
+    ctx.save(); ctx.translate(HC[0] + Math.cos(a) * rad, HC[1] + Math.sin(a) * rad); ctx.rotate(a + Math.PI / 2); ctx.fillText(txt[i], 0, 0); ctx.restore();
+  }
+  for (let i = 0; i < 4; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 2 + rt * .5, x = HC[0] + Math.cos(a) * HR, y = HC[1] + Math.sin(a) * HR;
+    ctx.fillStyle = '#0b0906'; ctx.beginPath(); ctx.arc(x, y, 11, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#f3c463'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x + 6, y); ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// ---------- 标题卡 ----------
+function titleBlock(t) {
+  ctx.save();
+  const x0 = 110, a1 = eout(lin(t, T.tag, T.tag + .5));
+  if (a1 > 0) {
+    ctx.globalAlpha = a1; ctx.translate(-20 * (1 - a1), 0);
+    ctx.font = '30px Sans'; ctx.textBaseline = 'middle';
+    const tag = S.tag.split(''), tw = tag.reduce((s, c) => s + ctx.measureText(c).width + 6, 0) + 50;
+    ctx.strokeStyle = 'rgba(232,200,140,.75)'; ctx.lineWidth = 1.6; ctx.stroke(rr(x0, 338, tw, 64, 6));
+    ctx.fillStyle = 'rgba(10,8,5,.6)'; ctx.fill(rr(x0, 338, tw, 64, 6));
+    ctx.fillStyle = '#f3ead8'; let x = x0 + 28;
+    for (const c of tag) { ctx.fillText(c, x, 371); x += ctx.measureText(c).width + 6; }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  const q = S.question, full = q.join(''), nq = Math.floor(full.length * lin(t, T.question, T.question + .9) + .001);
+  if (nq > 0) {
+    ctx.globalAlpha = 1; ctx.font = '52px SerifBold'; ctx.textBaseline = 'alphabetic';
+    const qw = ctx.measureText(q[0] + '「' + q[1] + '」' + q[2]).width;
+    if (qw > 780) ctx.font = `${Math.floor(52 * 780 / qw)}px SerifBold`;
+    ctx.shadowColor = 'rgba(255,220,150,.5)'; ctx.shadowBlur = 14;
+    let x = x0, idx = 0;
+    const seg = [[q[0], '#fbf3e2'], ['「', '#fbf3e2'], [q[1], '#ffd27a'], ['」', '#fbf3e2'], [q[2], '#fbf3e2']];
+    const shown = nq + (nq > q[0].length ? 1 : 0) + (nq > q[0].length + q[1].length ? 1 : 0);
+    for (const [s, col] of seg) for (const c of s) {
+      if (idx++ >= shown) break;
+      ctx.fillStyle = col; ctx.fillText(c, x, 482); x += ctx.measureText(c).width;
+    }
+  }
+  const a3 = lin(t, T.title, T.title + .7);
+  if (a3 > 0) {
+    const s = mix(1.18, 1, eout(a3));
+    ctx.save(); ctx.translate(x0, 700); ctx.scale(s, s); ctx.globalAlpha = eout(a3);
+    ctx.font = '236px SerifBlack'; ctx.textBaseline = 'alphabetic';
+    ctx.shadowColor = 'rgba(255,170,60,.75)'; ctx.shadowBlur = 50 + 40 * (1 - a3);
+    const g = ctx.createLinearGradient(0, -200, 0, 20);
+    g.addColorStop(0, '#fff7da'); g.addColorStop(.45, '#f6c867'); g.addColorStop(1, '#b8781e');
+    ctx.fillStyle = g; ctx.fillText(S.title, 0, 0);
+    ctx.shadowBlur = 0; ctx.globalCompositeOperation = 'lighter';
+    const sx = mix(-300, 900, lin(t, T.title + .3, T.title + 1.5)), sg = ctx.createLinearGradient(sx - 120, 0, sx + 120, 0);
+    sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(.5, 'rgba(255,250,230,.55)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sg; ctx.fillText(S.title, 0, 0);
+    ctx.restore();
+  }
+  const L = S.latin;
+  ctx.font = 'italic 36px Cinzel'; ctx.textBaseline = 'alphabetic'; ctx.shadowBlur = 0;
+  let x = x0 + 6;
+  for (let i = 0; i < L.length; i++) {
+    ctx.globalAlpha = lin(t, T.latin + i * .035, T.latin + i * .035 + .35); ctx.fillStyle = '#efe2c6';
+    ctx.fillText(L[i], x, 790); x += ctx.measureText(L[i]).width + 11;
+  }
+  ctx.restore();
+}
+
+// ---------- 主函数 ----------
+const SHATTER = S.transition === 'shatter';
+function act1(t, tr = t) { // 第一幕：罪。t 是画面里的时间（玻璃破碎前会放慢），tr 是真实时间（去色按它算）
+  const zoom = 1 + .06 * eio(lin(t, 0, T.flash)), shake = lin(t, 5.5, 8.6) * 7 + (SHATTER ? 0 : lin(t, T.slash, T.slash + .05) * 18);
+  ctx.save();
+  ctx.translate(W / 2 + noise(t * 23, 1) * shake, H / 2 + noise(t * 19, 4) * shake); ctx.scale(zoom, zoom); ctx.translate(-W / 2, -H / 2);
+  bgRed(t, lin(t, .2, 1.5));
+  const k = lin(t, T.figure, T.figure + 2.2);
+  FIG.early(t);
+  redRing(t, k);
+  if (k > 0) FIG.red(t, k);
+  drawWords(t);
+  S.cards.forEach((c, i) => drawCard(c, t, i));
+  FIG.redTop(t, k);
+  embers(t); if (FIG.cracks !== false) cracks(t); bokeh(t, true);
+  ctx.restore();
+  if (tr > T.grey) { // 去色变暗：整帧做一次 saturation 混合（比 ctx.filter 快几百倍）
+    const g = lin(tr, T.grey, T.grey + .2);
+    ctx.save(); ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = `rgba(128,128,128,${(SHATTER ? .8 : 1) * g})`; ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = `rgba(0,0,0,${(SHATTER ? .2 : .35) * g})`; ctx.fillRect(0, 0, W, H); ctx.restore();
+  }
+  vignette(.85);
+  pulse(t); scanlines(.08); glitch(t);
+  if (!SHATTER) {
+    slashLine(t);
+    splitFrame(t);
+    const fl = lin(t, T.flash - .06, T.flash);
+    if (fl > 0) { ctx.fillStyle = `rgba(255,248,230,${fl})`; ctx.fillRect(0, 0, W, H); }
+  }
+}
+function act2(t) { // 第二幕：德
+  const zoom = 1.04 - .04 * eout(lin(t, T.flash, T.flash + 2.5)) + .015 * lin(t, 13, 24), shake = 10 * (1 - lin(t, T.flash, T.flash + .6));
+  ctx.save();
+  ctx.translate(W / 2 + noise(t * 25, 2) * shake, H / 2 + noise(t * 21, 5) * shake); ctx.scale(zoom, zoom); ctx.translate(-W / 2, -H / 2);
+  bgGold(t);
+  godRays(t, eout(lin(t, T.flash, T.flash + 2)));
+  halo(t, eout(lin(t, T.flash, T.flash + 1.6)));
+  orbitSparks(t, lin(t, T.flash + .5, T.flash + 2));
+  FIG.gold(t, eout(lin(t, T.flash - .05, T.flash + .5)));
+  goldMotes(t, lin(t, T.flash + .8, T.flash + 3));
+  if (!SHATTER) shards(t);
+  FIG.burst(t);
+  shockwaves(t);
+  bokeh(t, false);
+  ctx.restore();
+  lightSweep(t);
+  vignette(.7);
+  titleBlock(t);
+  titleSparks(t);
+  const fo = SHATTER ? FIG.IMPACT : [HC[0], HC[1] - 40];
+  flare(fo[0], fo[1], 1 - lin(t, T.flash, T.flash + 1.4));
+  flare(360, 640, Math.sin(Math.PI * lin(t, T.title + .1, T.title + 1)) * .8, 700);
+  if (FIG.flare) FIG.flare(t);
+  if (!SHATTER) {
+    const fl = 1 - lin(t, T.flash, T.flash + .7);
+    if (fl > 0) { ctx.fillStyle = `rgba(255,248,230,${fl * fl})`; ctx.fillRect(0, 0, W, H); }
+  }
+}
+const slowmo = t => t < T.grey ? t : T.grey + (t - T.grey) * .22; // 玻璃裂开时画面放慢
+window.renderAt = function (t) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
+  if (!SHATTER) { t < T.flash ? act1(t) : act2(t); }
+  else if (t < T.flash) { act1(slowmo(t), t); glassCracks(t); }
+  else {
+    glassFreeze(() => act1(slowmo(T.flash), T.flash)); // 碎片上的画面：定格在破碎那一刻的第一幕
+    act2(t); glassShatter(t);
+  }
+  grain(t);
+  const fo = lin(t, T.fadeOut, S.duration - .1) + (1 - lin(t, 0, .35));
+  if (fo > 0) { ctx.fillStyle = `rgba(0,0,0,${clamp(fo)})`; ctx.fillRect(0, 0, W, H); }
+};
+document.write('<script src="fx.js"><\/script><script src="figures/' + S.figure + '.js"><\/script>');
+</script>
+<script>
+window.ready = (async () => {
+  await document.fonts.load('20px SerifBlack', S.title); await document.fonts.load('20px SerifBold', '明');
+  await document.fonts.load('20px SansBold', '刷'); await document.fonts.load('20px Sans', '刷');
+  await document.fonts.load('20px Cinzel', 'A'); await document.fonts.load('italic 20px Cinzel', 'A');
+  await document.fonts.ready;
+  buildTextFill();
+  return true;
+})();
+</script>
+</body></html>

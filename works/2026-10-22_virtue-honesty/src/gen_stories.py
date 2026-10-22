@@ -1,5 +1,6 @@
 """美德·诚实 文案总表 → 生成 stories/honesty.js。改文案只改这里，然后重新运行本脚本。
-卡片的出场时间/位置/角度沿用「节制」以来的编排（LAYOUT），结构同天使篇；画面上不出现“七美德”字样。"""
+卡片的出场时间/位置/角度沿用七美德系列的编排（LAYOUT）；画面上不出现“七美德”字样。
+figure 指定人物文件 figures/<figure>.js（诚实 = 提线木偶 → 真正的少年）。"""
 import json, os
 
 LAYOUT = [  # [出现时刻, x, y, 旋转°, 缩放]
@@ -14,9 +15,9 @@ ICON_COLORS = ['#3f6f8f', '#b8452f', '#c9822b', '#6c4a8f', '#2f7a66', '#b03a5b',
 V = {}
 # 卡片：(应用, 标题=说出口的话, 副标题=真相)。画面撕裂的瞬间，卡片会闪出副标题里的真相。
 V['honesty'] = dict(
-    no=8, cn='诚实', latin='HONESTAS · HONESTY', question=['明明可以骗过去，为什么还要', '说真话', '？'],
+    no=8, cn='诚实', figure='puppet', truth_flip=True, latin='HONESTAS · HONESTY', question=['明明可以骗过去，为什么还要', '说真话', '？'],
     tag='美德 · 以诚待人', ring='VERITAS LIBERABIT VOS · HONESTAS · ',
-    fig=dict(head='circlet', emblem='sun', props='truth', accent='#d8f4ff', glow='#7fd4ff'), key=2,
+    fig=dict(accent='#d8f4ff', glow='#7fd4ff'), key=2,
     cards=[('微信', '在路上了，马上到', '（其实刚起床）'), ('朋友圈', '随手一拍，原图直出', '精修 2 小时，滤镜 ×3'),
            ('简历', '精通 Excel、Python', '只会 Ctrl+C / Ctrl+V'), ('私信', '刚看到消息', '已读 3 小时'),
            ('直播间', '全网最低价！', '原价今天刚改的'), ('家长群', '孩子考了全班第五', '倒数的'),
@@ -37,12 +38,12 @@ for vid, v in V.items():
     cards = []
     for i, ((app, title, body), lay) in enumerate(zip(v['cards'], LAYOUT)):
         cards.append(lay + [app, app[0], ICON_COLORS[(i * 3 + v['no']) % len(ICON_COLORS)], title, body])
-    story = dict(duration=25.2, no=v['no'], tag=v['tag'], question=v['question'], title=v['cn'], latin=v['latin'],
+    story = dict(duration=25.2, no=v['no'], figure=v['figure'], truthFlip=v['truth_flip'], tag=v['tag'], question=v['question'], title=v['cn'], latin=v['latin'],
                  ring=v['ring'], fig=v['fig'], key=v['key'], cards=cards, words=v['words'], chars=v['chars'])
     js = 'window.STORY = ' + json.dumps(story, ensure_ascii=False, indent=1) + ';\n'
-    # 时间轴（与「节制」一致，另加面具碎裂与画面劈开）；audio.py 按 “t: {...}” 读取
+    # 时间轴（与七美德系列一致，另加画面劈开）；audio.py 按 “t: {...}” 读取
     js += """window.STORY.t = {
-  figure: 4.6, crack: 6.3, grey: 8.9, slash: 9.05, split: 9.18, flash: 9.45, gold: 9.55,
+  figure: 4.6, grey: 8.9, slash: 9.05, split: 9.18, flash: 9.45, gold: 9.55,
   tag: 11.9, question: 12.2, title: 12.9, latin: 13.6, fadeOut: 24.1,
 };
 """

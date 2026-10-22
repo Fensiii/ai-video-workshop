@@ -1,6 +1,8 @@
-"""美德·诚实 —— 全合成配乐与音效（numpy），输出 48k 立体声 wav。
-在天使篇音效的基础上：去掉水流声，加面具开裂的噼啪声、画面劈开的撕裂声、面具碎裂声、真理之光的低鸣与光波轻响。
-时间点与 stories/honesty.js 对齐：卡片弹出叮声、心跳加速、斜斩、闪白冲击、金色和弦、标题钟声、慢鼓。"""
+"""美德短片 —— 全合成配乐与音效（numpy），输出 48k 立体声 wav。
+用法：python3 audio.py stories/<id>.js out.wav [events.json]
+通用部分与 stories/<id>.js 的时间轴对齐：嗡鸣、卡片叮声、渐快心跳、撕裂电流声、斜斩、劈开、闪白冲击、碎片叮当、
+金色和弦 + 和声、标题钟声、慢鼓、第二幕的光之低鸣与光波轻响。
+人物专属音效来自 events.json（render.js events 从 FIG.events 导出），每条 {t, kind}，见文件末尾的 EVENT_SYNTH。"""
 import json, re, sys, wave
 import numpy as np
 
@@ -15,6 +17,7 @@ L = np.zeros(N); R = np.zeros(N)
 # 用法：python3 audio.py stories/<id>.js out.wav
 src = open(sys.argv[1], encoding='utf-8').read()
 OUT = sys.argv[2] if len(sys.argv) > 2 else 'audio.wav'
+EVENTS = json.load(open(sys.argv[3])) if len(sys.argv) > 3 else []
 story = json.loads(src.split('window.STORY = ', 1)[1].split(';\nwindow.STORY.t', 1)[0])
 card_times = [c[0] for c in story['cards']]
 T = {k: float(v) for k, v in re.findall(r"(\w+):\s*(\d+\.\d+)", src.split('t = {')[1].split('}')[0])}
@@ -142,21 +145,21 @@ while bt < T['fadeOut'] + .5:
         add(s, bt + dt, gain=.55 * g * (1 - np.clip((bt - T['fadeOut']) / 1.2, 0, 1)))
     bt += beat * 2
 
-# 真理之光的空气感低鸣（第二幕持续）：高处几条微微走音的正弦 + 轻柔气声
+# 第二幕光源的空气感低鸣：高处几条微微走音的正弦 + 轻柔气声
 lg = ramp(T['gold'] + .2, T['gold'] + 1.6) * (1 - ramp(T['fadeOut'], DUR))
 hum = sum(np.sin(2 * np.pi * f * KF * t + k) * (.5 + .5 * np.sin(2 * np.pi * .23 * (k + 1) * t)) for k, f in enumerate([1174.7, 1176.1, 1760, 2349.3]))
 air = lp_fast(rng.standard_normal(N), 3) - lp_fast(rng.standard_normal(N), 30)
 L += (hum * .012 + air * .012) * lg; R += (hum * .012 + air * .014) * lg
 
-# ---------- 天使篇追加音效 ----------
-# 画面撕裂时的电流声（与 angel.js 的 GLITCH 时间一致）
+# ---------- 追加音效 ----------
+# 画面撕裂时的电流声（与 fx.js 的 GLITCH 时间一致）
 for g0 in [2.1, 3.4, 4.6, 5.9, 6.7, 7.3, 7.8, 8.25, 8.6]:
     n = int(.16 * SR); tt = np.arange(n) / SR
     sq = np.sign(np.sin(2 * np.pi * rng.uniform(80, 400) * tt)) * .5 + rng.standard_normal(n) * .6
     sq = np.round(sq * 4) / 4 * env(n, .002, .08)
     add(sq, g0, pan=rng.uniform(-.6, .6), gain=.16)
-# 翅膀展开的两声呼啸
-for at, g in [(T['flash'] + .1, .5), (T['flash'] + .9, .35)]:
+# 闪白后的两声气流（释放感）
+for at, g in [(T['flash'] + .1, .45), (T['flash'] + .9, .25)]:
     n = int(1.4 * SR); tt = np.arange(n) / SR
     wh = lp_fast(rng.standard_normal(n), 14) - lp_fast(rng.standard_normal(n), 120)
     wh *= np.sin(np.pi * np.clip(tt / 1.2, 0, 1)) ** 2
@@ -167,7 +170,7 @@ for i in range(60):
     f = rng.choice([1760, 2093, 2349, 2637, 3136]) * KF
     n = int(.8 * SR); tt = np.arange(n) / SR
     add(np.sin(2 * np.pi * f * tt) * env(n, .003, .25), at, pan=rng.uniform(-.9, .9), gain=.025)
-# 天使和声：高八度柔和长音
+# 和声：高八度柔和长音
 choir = np.zeros(N)
 for ci, (st, notes) in enumerate(chords):
     en = chords[ci + 1][0] if ci + 1 < len(chords) else DUR
@@ -179,34 +182,18 @@ for ci, (st, notes) in enumerate(chords):
 choir *= act2 / 3
 L += choir * .09; R += choir * .09
 
-# ---------- 诚实篇追加音效 ----------
-# 面具开裂：与 honesty.js 的 MASK_CRACKS 同时（T.crack + 第几道 × .32 + 分叉 × .18），每道 0.45 秒的噼啪
-for si in range(6):
-    for b in range(2):
-        at = T['crack'] + si * .32 + b * .18
-        for j in range(7):
-            n = int(.05 * SR); tt = np.arange(n) / SR
-            cl = rng.standard_normal(n); cl = cl - lp_fast(cl, 3)
-            cl *= env(n, .0005, .006 + rng.uniform(0, .01))
-            cl += np.sin(2 * np.pi * rng.uniform(2500, 5200) * tt) * env(n, .0005, .012) * .5
-            add(cl, at + j * .06 + rng.uniform(0, .03), pan=-.15 + rng.uniform(-.2, .2), gain=.10 + .05 * si / 5)
+# ---------- 劈开、闪白、光波 ----------
 # 画面劈开：向下扫的撕裂噪声 + 次低频下坠
 n = int(.5 * SR); tt = np.arange(n) / SR
 rip = rng.standard_normal(n); rip = lp_fast(rip, 2) - lp_fast(rip, int(8 + 40 * 1))
 rip *= np.sin(np.pi * np.clip(tt / .45, 0, 1)) ** 1.5 * (1 + 2 * np.sin(2 * np.pi * 37 * tt) ** 2)
 drop = np.sin(2 * np.pi * np.cumsum(90 * np.exp(-tt * 5) + 28) / SR) * env(n, .01, .3)
 add(rip * .35 + drop * .6, T['split'] - .02, gain=.6)
-# 面具碎裂：脆响 + 一串瓷片的高频叮
+# 闪白瞬间的脆响
 n = int(.25 * SR); tt = np.arange(n) / SR
 crk = rng.standard_normal(n); crk = crk - lp_fast(crk, 2)
-add(crk * env(n, .0003, .04), T['flash'] - .03, gain=.5)
-for i in range(28):
-    at = T['flash'] + rng.uniform(0, 1.2) ** 1.4
-    f = rng.uniform(3200, 6400)
-    n = int(.25 * SR); tt = np.arange(n) / SR
-    s = (np.sin(2 * np.pi * f * tt) + .5 * np.sin(2 * np.pi * f * 1.47 * tt)) * env(n, .0005, .03 + rng.uniform(0, .05))
-    add(s, at, pan=rng.uniform(-.8, .3), gain=.06 * (1 - (at - T['flash']) / 2))
-# 真理之光的光波：每一圈扩散时一声很轻的玻璃钟
+add(crk * env(n, .0003, .04), T['flash'] - .03, gain=.45)
+# 光波：每一圈扩散时一声很轻的玻璃钟（与人物文件里的光波同周期：第 1 + i×0.9 秒起，每 2.7 秒一圈）
 for i in range(3):
     st = T['gold'] + 1 + i * .9
     while st < T['fadeOut']:
@@ -215,6 +202,60 @@ for i in range(3):
         s = (np.sin(2 * np.pi * f * tt) + .3 * np.sin(2 * np.pi * f * 2.76 * tt) * np.exp(-tt * 3)) * env(n, .004, .9)
         add(s, st, pan=-.35, gain=.035)
         st += 2.7
+
+# ---------- 人物专属音效（events.json） ----------
+def karplus(f, dur, damp=.996):
+    n = int(dur * SR); p = max(2, int(SR / f)); buf = rng.uniform(-1, 1, p); out = np.zeros(n)
+    for i in range(n):
+        out[i] = buf[i % p]; buf[i % p] = damp * .5 * (buf[i % p] + buf[(i + 1) % p])
+    return out
+
+
+def ev_creak(e):  # 木头吱呀 + 一声“咚”：木偶鼻子长一截
+    n = int(.45 * SR); tt = np.arange(n) / SR
+    fr = 180 + 90 * np.sin(2 * np.pi * 7 * tt) + 400 * tt
+    sq = np.sign(np.sin(2 * np.pi * np.cumsum(fr) / SR)) * (lp_fast(rng.standard_normal(n), 2) * .6 + .4)
+    sq = lp_fast(sq, 6) * np.sin(np.pi * np.clip(tt / .4, 0, 1)) ** .7
+    knock = np.sin(2 * np.pi * np.cumsum(420 * np.exp(-tt * 30) + 210) / SR) * env(n, .001, .05)
+    add(sq * .5 + knock, e['t'], pan=-.2, gain=.32)
+
+
+def ev_knock(e):  # 木关节被提线一扯的“咔嗒”
+    n = int(.12 * SR); tt = np.arange(n) / SR
+    s = np.sin(2 * np.pi * rng.uniform(600, 900) * tt) * env(n, .0005, .02) + lp_fast(rng.standard_normal(n), 2) * env(n, .0003, .008)
+    add(s, e['t'], pan=rng.uniform(-.3, .5), gain=.22)
+
+
+def ev_twang(e):  # 提线被斩断：拨弦一声，音高往下掉
+    s = karplus(rng.uniform(330, 520) * KF, 1.2, .994)
+    n = len(s); tt = np.arange(n) / SR
+    s *= np.exp(-tt * 2.5)
+    snap = rng.standard_normal(int(.03 * SR)); snap = snap - lp_fast(snap, 2)
+    add(s, e['t'], pan=rng.uniform(-.2, .6), gain=.5); add(snap * env(len(snap), .0002, .01), e['t'], gain=.4)
+
+
+def ev_clatter(e):  # 木架、木屑落地的一串木头碰撞声
+    for i in range(9):
+        at = e['t'] + .15 + rng.uniform(0, 1.4) ** 1.3
+        n = int(.15 * SR); tt = np.arange(n) / SR
+        s = np.sin(2 * np.pi * rng.uniform(300, 1100) * tt) * env(n, .0005, .03) + lp_fast(rng.standard_normal(n), 3) * env(n, .0003, .01) * .6
+        add(s, at, pan=rng.uniform(-.8, .8), gain=.12 * (1 - (at - e['t']) / 2))
+
+
+def ev_retract(e):  # 长鼻子缩回去：一串往上走的晶亮音
+    d = e.get('dur', 1.2)
+    n = int((d + 1) * SR); tt = np.arange(n) / SR
+    f = (900 + 1600 * np.clip(tt / d, 0, 1) ** 1.5) * KF
+    s = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * np.clip(tt / d, 0, 1)) ** 1.2 * .4
+    for j in range(10):
+        at = d * j / 10; m = int(.5 * SR); t2 = np.arange(m) / SR; fj = (1200 + 180 * j) * KF
+        s[int(at * SR):int(at * SR) + m] += np.sin(2 * np.pi * fj * t2)[:max(0, n - int(at * SR))] * env(m, .002, .15)[:max(0, n - int(at * SR))] * .35
+    add(s, e['t'], pan=-.4, gain=.16)
+
+
+EVENT_SYNTH = dict(creak=ev_creak, knock=ev_knock, twang=ev_twang, clatter=ev_clatter, retract=ev_retract)
+for e in EVENTS:
+    EVENT_SYNTH[e['kind']](e)
 
 # ---------- 简易混响 + 母带 ----------
 def reverb(x):

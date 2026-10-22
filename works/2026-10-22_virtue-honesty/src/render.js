@@ -1,6 +1,7 @@
 // 用法：
 //   VIRTUE=justice node render.js still out_dir t1 t2 ...        # 静帧预览
 //   node render.js seg out.mp4 startFrame endFrame # 分段渲染（30fps）
+//   node render.js events events.json            # 导出人物专属音效时间点（给 audio.py）
 const { chromium } = require('playwright');
 const { spawn } = require('child_process');
 const path = require('path');
@@ -14,7 +15,9 @@ const FPS = 30;
   await page.goto('file://' + path.join(__dirname, 'index.html') + '?v=' + (process.env.VIRTUE || 'temperance'));
   await page.evaluate(() => window.ready);
   const shot = () => page.screenshot({ type: 'jpeg', quality: 95, clip: { x: 0, y: 0, width: 1920, height: 1080 } });
-  if (mode === 'still') {
+  if (mode === 'events') { // 导出人物专属音效时间点
+    require('fs').writeFileSync(out, await page.evaluate(() => JSON.stringify(typeof FIG !== 'undefined' && FIG.events || [])));
+  } else if (mode === 'still') {
     const fs = require('fs'); fs.mkdirSync(out, { recursive: true });
     for (const t of rest) {
       await page.evaluate(t => window.renderAt(t), +t);

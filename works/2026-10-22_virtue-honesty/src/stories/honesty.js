@@ -1,6 +1,8 @@
 window.STORY = {
  "duration": 25.2,
  "no": 8,
+ "figure": "puppet",
+ "truthFlip": true,
  "tag": "美德 · 以诚待人",
  "question": [
   "明明可以骗过去，为什么还要",
@@ -11,9 +13,6 @@ window.STORY = {
  "latin": "HONESTAS · HONESTY",
  "ring": "VERITAS LIBERABIT VOS · HONESTAS · ",
  "fig": {
-  "head": "circlet",
-  "emblem": "sun",
-  "props": "truth",
   "accent": "#d8f4ff",
   "glow": "#7fd4ff"
  },
@@ -277,6 +276,6 @@ window.STORY = {
  ]
 };
 window.STORY.t = {
-  figure: 4.6, crack: 6.3, grey: 8.9, slash: 9.05, split: 9.18, flash: 9.45, gold: 9.55,
+  figure: 4.6, grey: 8.9, slash: 9.05, split: 9.18, flash: 9.45, gold: 9.55,
   tag: 11.9, question: 12.2, title: 12.9, latin: 13.6, fadeOut: 24.1,
 };

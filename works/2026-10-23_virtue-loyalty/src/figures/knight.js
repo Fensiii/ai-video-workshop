@@ -45,6 +45,8 @@ const HELM_HOLES = (() => { const p = new Path2D(); // 面甲上的透气孔 + �
   return p; })();
 const HELM_RIVETS = [[1398, 376, 9], [1426, 378, 3.5], [1452, 390, 3.5], [1470, 410, 3.5], [1300, 534, 3], [1440, 528, 3]];
 const RONDEL = circ(1484, 470, 17), RONDEL_IN = circ(1484, 470, 10), RONDEL_SPIKE = circ(1484, 470, 3.5);
+const COMB = P([[1294, 266], [1318, 222], [1366, 202], [1416, 212], [1452, 244], [1446, 262], [1412, 234], [1368, 226], [1326, 240], [1304, 272]]);  // 盔顶的脊冠
+const COMB_LINE = (() => { const p = new Path2D(); p.moveTo(1306, 252); p.quadraticCurveTo(1366, 200, 1446, 252); return p; })();
 const PLUME_HOLDER = poly([[1444, 262], [1462, 254], [1474, 270], [1458, 282]]);
 const PLUME_B = [1462, 268];
 function headA(t) {
@@ -52,7 +54,9 @@ function headA(t) {
   const nod = HITS.reduce((m, h) => { const d = t - h.t; return d >= 0 && d < .9 ? Math.max(m, Math.sin(Math.PI * d / .9) * (h.type === 'salute' ? 1 : .5)) : m; }, 0);
   return mix(-.04 - .008 * BEATS.length, .01, eio(lin(t, T.flash, T.flash + 1))) + .055 * nod + .005 * Math.sin(t * .9);
 }
-const withHead = (t, f) => { ctx.save(); ctx.translate(...HP); ctx.rotate(headA(t)); ctx.translate(-HP[0], -HP[1]); f(); ctx.restore(); };
+// 头盔整体缩小、拉高一点（头小肩宽才显得英武）；下面的头盔坐标都是缩放前的，HELM_S 在 withHead 里统一套上
+const HELM_S = new DOMMatrix().translate(1385, 562).scale(.82, .88).translate(-1385, -562);
+const withHead = (t, f) => { ctx.save(); ctx.translate(...HP); ctx.rotate(headA(t)); ctx.translate(-HP[0], -HP[1]); applyM(HELM_S); f(); ctx.restore(); };
 
 // ================= 盔缨（九根长羽，往后飘）=================
 function feather(t, i, gold) {
@@ -78,25 +82,27 @@ function feather(t, i, gold) {
 }
 
 // ================= 身体（胸甲 + 腹甲 + 甲裙）=================
-const BODY0 = [[1318, 548], [1270, 566], [1222, 596], [1196, 650], [1190, 720], [1200, 790], [1226, 850], [1238, 900], [1232, 950], [1222, 1095], [1640, 1095],
-  [1622, 960], [1600, 900], [1612, 840], [1640, 760], [1662, 680], [1634, 610], [1562, 574], [1470, 556], [1400, 552]];
+const BODY0 = [[1318, 548], [1270, 562], [1222, 590], [1192, 646], [1184, 712], [1196, 790], [1230, 856], [1262, 906], [1262, 960], [1258, 1095], [1592, 1095],
+  [1594, 960], [1594, 904], [1620, 840], [1660, 762], [1690, 676], [1672, 618], [1610, 582], [1520, 562], [1440, 552]];
 const P_BODY = P(BODY0);
 const BODY_LINES = (() => { const p = new Path2D();
   p.moveTo(1320, 568); p.quadraticCurveTo(1404, 604, 1494, 572);               // 胸甲领口的卷边
   p.moveTo(1326, 582); p.quadraticCurveTo(1404, 618, 1488, 586);
   p.moveTo(1336, 610); p.bezierCurveTo(1306, 700, 1304, 790, 1326, 868);       // 胸甲中脊
-  p.moveTo(1232, 902); p.bezierCurveTo(1290, 880, 1312, 826, 1330, 796);       // 腹甲：中间尖起来的拱
-  p.bezierCurveTo(1350, 826, 1460, 878, 1604, 904);
-  p.moveTo(1236, 916); p.bezierCurveTo(1292, 894, 1314, 842, 1330, 814); p.bezierCurveTo(1348, 842, 1458, 892, 1602, 918);
-  for (const y of [952, 994, 1036, 1078]) { p.moveTo(1232 - (y - 950) * .07, y); p.quadraticCurveTo(1424, y + 18, 1622 + (y - 950) * .1, y - 4); }  // 甲裙
-  p.moveTo(1640, 700); p.quadraticCurveTo(1598, 780, 1606, 880);               // 侧甲
+  p.moveTo(1262, 908); p.bezierCurveTo(1298, 884, 1314, 826, 1330, 796);       // 腹甲：中间尖起来的拱
+  p.bezierCurveTo(1350, 826, 1460, 878, 1594, 906);
+  p.moveTo(1262, 922); p.bezierCurveTo(1300, 898, 1316, 842, 1330, 814); p.bezierCurveTo(1348, 842, 1458, 892, 1594, 920);
+  for (const y of [952, 994, 1036, 1078]) { p.moveTo(1262, y); p.quadraticCurveTo(1424, y + 18, 1594, y - 4); }  // 甲裙
+  p.moveTo(1664, 700); p.quadraticCurveTo(1612, 790, 1600, 900);               // 侧甲
   p.moveTo(1200, 760); p.quadraticCurveTo(1250, 740, 1296, 700);               // 胸甲的弧面
   return p; })();
+const FAR_PAUL = P([[1566, 592], [1612, 566], [1664, 570], [1702, 604], [1712, 650], [1694, 690], [1652, 702], [1602, 686], [1574, 646]]);  // 背后那侧露出来的肩甲
+const FAR_PAUL_LINES = (() => { const p = new Path2D(); p.moveTo(1580, 650); p.quadraticCurveTo(1640, 684, 1704, 652); p.moveTo(1576, 624); p.quadraticCurveTo(1640, 654, 1708, 624); p.moveTo(1612, 572); p.quadraticCurveTo(1630, 620, 1626, 690); return p; })();
 const BODY_ETCH = (() => { const p = new Path2D(); // 胸甲卷边、腹甲边上的蚀刻花纹（一串小菱形）
   for (let i = 0; i <= 14; i++) { const u = i / 14, x = mix(1330, 1484, u), y = 594 + Math.sin(Math.PI * u) * 22; p.moveTo(x, y - 3); p.lineTo(x + 3, y); p.lineTo(x, y + 3); p.lineTo(x - 3, y); p.closePath(); }
   for (let i = 0; i <= 10; i++) { const u = i / 10, x = mix(1340, 1590, u), y = 830 + u * 72 - Math.sin(Math.PI * u) * 8; p.moveTo(x, y - 3); p.lineTo(x + 3, y); p.lineTo(x, y + 3); p.lineTo(x - 3, y); p.closePath(); }
   return p; })();
-const BODY_RIVETS = [[1240, 956], [1236, 998], [1232, 1040], [1618, 950], [1622, 992], [1626, 1034], [1328, 588], [1488, 584]];
+const BODY_RIVETS = [[1272, 958], [1272, 1000], [1272, 1042], [1584, 952], [1584, 994], [1584, 1036], [1328, 588], [1488, 584]];
 // 胸前的盾形纹章 + 心
 const EMB = [1478, 740];
 const P_SHIELD = (() => { const s = catmull([[-50, -56], [0, -60], [50, -56], [50, 0], [30, 36], [0, 62], [-30, 36], [-50, 0]], true), p = new Path2D(); p.addPath(s, new DOMMatrix().translate(...EMB)); return p; })();
@@ -109,24 +115,44 @@ const CRACKS_E = (() => { const r = rng(55), out = []; // 纹章上的裂纹：�
     out.push({ pts, order: i }); }
   return out; })();
 // 肩甲（层叠甲片）
-const S0 = [1290, 630];
-const PAUL = P([[1196, 640], [1204, 596], [1240, 564], [1292, 550], [1352, 558], [1398, 588], [1416, 630], [1404, 656], [1300, 668], [1206, 660]]);
-const LAMES = [ // 肩甲下面层叠的三片（从下往上画，上面一片压住下面一片）
-  P([[1214, 698], [1300, 708], [1394, 690], [1386, 716], [1300, 734], [1222, 724]]),
-  P([[1206, 676], [1300, 686], [1404, 668], [1398, 696], [1300, 714], [1212, 704]]),
-  P([[1200, 652], [1300, 662], [1410, 646], [1408, 674], [1300, 692], [1204, 682]])];
-const PAUL_LINES = (() => { const p = new Path2D();
-  p.moveTo(1292, 554); p.quadraticCurveTo(1304, 600, 1302, 662);              // 顶片的脊
-  p.moveTo(1214, 628); p.quadraticCurveTo(1300, 650, 1404, 622);              // 顶片下缘的翻边
-  return p; })();
-const PAUL_EDGE = (() => { const p = new Path2D(); p.addPath(PAUL, new DOMMatrix().translate(1305, 612).scale(.9, .84).translate(-1305, -612)); return p; })();
-const PAUL_RIVETS = [[1214, 664], [1402, 658], [1220, 688], [1396, 682], [1228, 712], [1388, 704], [1300, 570], [1222, 640], [1402, 634]];
+const S0 = [1292, 628];
+// 肩甲：按手臂自然下垂（UA_REST）时的画面坐标设计，再换到局部坐标（原点在肩，x 沿上臂往肘）。
+// 顶片（带护颈翼）跟着上臂转一半，下面三层甲片完全跟着上臂走——手一抬，肩甲就跟着翻起来。
 const UA_REST = 122 * D2R;
-const paulM = ua => new DOMMatrix().translate(...S0).rotate((ua - UA_REST) * .3 / D2R).translate(4, -6).scale(.9).translate(-S0[0], -S0[1]);
+const TO_LOCAL = new DOMMatrix([Math.cos(UA_REST), Math.sin(UA_REST), -Math.sin(UA_REST), Math.cos(UA_REST), S0[0], S0[1]]).inverse();
+const local = path => { const p = new Path2D(); p.addPath(path, TO_LOCAL); return p; };
+const localPts = pts => pts.map(([x, y, r]) => { const q = TO_LOCAL.transformPoint(new DOMPoint(x, y)); return r ? [q.x, q.y, r] : [q.x, q.y]; });
+const PAUL_W = [[1300, 550], [1250, 558], [1212, 580], [1192, 616], [1190, 652], [1206, 682], [1238, 702], [1280, 706], [1328, 692], [1370, 664], [1400, 626], [1396, 586], [1358, 560]];
+const PAUL_SC = new DOMMatrix().translate(1296, 600).scale(.86).translate(-1296, -600);  // 整体缩一点
+const PAUL = local(P(PAUL_W.map(([x, y]) => { const q = PAUL_SC.transformPoint(new DOMPoint(x, y)); return [q.x, q.y]; })));
+const FLANGE = P([[1300, 566], [1310, 534], [1342, 514], [1380, 518], [1404, 548], [1400, 576], [1352, 572]]);   // 护颈翼：肩头翘起来的一片（固定在身上，不跟手臂转）
+const FLANGE_L = (() => { const p = new Path2D(); p.moveTo(1312, 540); p.quadraticCurveTo(1350, 526, 1394, 546); return p; })();
+const PW = PAUL_W.map(([x, y]) => { const q = PAUL_SC.transformPoint(new DOMPoint(x, y)); return [q.x, q.y]; });
+const LAMES = [3, 2, 1].map(i => local(P(PW.slice(4, 10).map(([x, y], j) => [x - 9 * i - j * 1.5, y + 14 * i]).concat(
+  PW.slice(4, 10).reverse().map(([x, y], j) => [x - 9 * i + 10 - (5 - j) * 1.5, y + 14 * i - 26])))));                 // 顶片下缘往下错开的三层甲片
+const PAUL_LINES = local((() => { const p = new Path2D();
+  p.moveTo(1298, 562); p.bezierCurveTo(1276, 610, 1252, 660, 1244, 702);   // 顶片的脊
+  p.moveTo(1208, 610); p.quadraticCurveTo(1300, 648, 1394, 606);            // 甲面的弧
+  p.moveTo(1302, 528); p.quadraticCurveTo(1340, 516, 1384, 534);            // 护颈翼的卷边
+  return p; })());
+const PAUL_EDGE = local((() => { const p = new Path2D(); p.addPath(P(PW), new DOMMatrix().translate(1296, 640).scale(.86).translate(-1296, -640)); return p; })());
+const PAUL_RIVETS = localPts([[1206, 640, 3.5], [1222, 676, 3.5], [1270, 694, 3.5], [1326, 680, 3.5], [1376, 640, 3.5], [1380, 594, 3.5], [1300, 600, 4.5]]);
+const shellM = (ua) => frame(S0, dir(UA_REST + (ua - UA_REST) * .45));
+const paulDraw = (R, gold, t) => { // 护颈翼（固定）→ 甲片 → 顶片
+  if (gold) { armorFill(FLANGE); sheen(FLANGE, [[1350, 530, 40, 12, .25]]); glowStroke(FLANGE, 2, 10); glowStroke(FLANGE_L, 1, 4); }
+  else { darkMetal(FLANGE, 1350, 540, 80); redStroke(FLANGE, 1.6, 8); }
+  inFrame(R.mU, () => { for (const l of LAMES) { if (gold) { armorFill(l); sheen(l, [[60, -40, 60, 12, .18]]); glowStroke(l, 2, 9); } else { darkMetal(l, 80, 0, 80); redStroke(l, 1.8, 8); } } });
+  inFrame(shellM(R.ua), () => {
+    if (gold) { armorFill(PAUL); sheen(PAUL, [[-10, -10, 60, 40, .32], [50, 10, 30, 30, .12]]); gleam(PAUL, t, -140, 140);
+      glowStroke(PAUL, 2.6, 14); glowStroke(PAUL_LINES, 1.3, 6); glowStroke(PAUL_EDGE, .7, 3, '#c9944a'); rivets(PAUL_RIVETS, true); }
+    else { darkMetal(PAUL, 0, -20, 120); redStroke(PAUL, 2.2, 12);
+      ctx.strokeStyle = 'rgba(255,110,70,.55)'; ctx.lineWidth = 1.3; ctx.stroke(PAUL_LINES); ctx.lineWidth = .8; ctx.stroke(PAUL_EDGE); }
+  });
+};
 // 披风（在身后，往右飘）
 function capePath(t, gold) {
   const sp = gold ? 1.7 : .9, amp = gold ? 1 : .45, R = [], hem = [];
-  for (let k = 0; k <= 9; k++) { const u = k / 9, y = 600 + u * 520; R.push([1640 + u * 230 + (46 * Math.sin(t * sp - u * 3.4) + 18 * Math.sin(t * sp * 1.7 - u * 6)) * u * amp, y]); }
+  for (let k = 0; k <= 9; k++) { const u = k / 9, y = 590 + u * 530; R.push([1650 + u * 330 + (60 * Math.sin(t * sp - u * 3.4) + 22 * Math.sin(t * sp * 1.7 - u * 6)) * u * amp, y - 40 * Math.sin(Math.PI * u) * amp]); }
   for (let k = 1; k <= 8; k++) { const u = k / 8, x = mix(R[9][0], 1480, u); hem.push([x, 1120 - 18 * Math.sin(t * sp * 1.3 + u * 7) * amp + (gold ? 0 : (k % 2 ? 26 : -8))]); }
   const pts = [[1470, 566], [1560, 578], ...R, ...hem, [1470, 900]];
   const folds = new Path2D();
@@ -136,10 +162,10 @@ function capePath(t, gold) {
 }
 
 // ================= 手臂（骨骼）+ 剑 =================
-const LU = 165, LF = 175;
-const REREBRACE = P([[-6, -42], [60, -43], [LU - 10, -38], [LU + 4, -34], [LU + 4, 34], [LU - 10, 38], [60, 43], [-6, 42], [-16, 0]]);
-const RERE_LINES = (() => { const p = new Path2D(); for (const u of [55, 108]) { p.moveTo(u, -38); p.quadraticCurveTo(u + 9, 0, u, 38); } p.moveTo(4, -18); p.quadraticCurveTo(80, -22, LU - 6, -16); return p; })();
-const VAMB = P([[-4, -38], [40, -38], [100, -34], [LF - 36, -30], [LF - 36, 30], [100, 34], [40, 38], [-4, 38]]);
+const LU = 186, LF = 180;
+const REREBRACE = P([[20, -46], [80, -46], [LU - 12, -40], [LU + 4, -36], [LU + 4, 36], [LU - 12, 40], [80, 46], [20, 46], [8, 0]]);
+const RERE_LINES = (() => { const p = new Path2D(); for (const u of [118, 150]) { p.moveTo(u, -44); p.quadraticCurveTo(u + 9, 0, u, 44); } p.moveTo(100, -22); p.quadraticCurveTo(140, -24, LU - 6, -18); return p; })();
+const VAMB = P([[-4, -40], [40, -40], [100, -35], [LF - 36, -31], [LF - 36, 31], [100, 35], [40, 40], [-4, 40]]);
 const VAMB_LINES = (() => { const p = new Path2D(); p.moveTo(8, -10); p.quadraticCurveTo(70, -14, LF - 40, -8); p.moveTo(58, -32); p.quadraticCurveTo(66, 0, 58, 32); return p; })();
 const CUFF = P([[LF - 44, -31], [LF - 8, -46], [LF + 10, -44], [LF + 13, 0], [LF + 10, 44], [LF - 8, 46], [LF - 44, 31]]);
 const CUFF_LINES = (() => { const p = new Path2D(); for (const u of [LF - 26, LF - 9]) { p.moveTo(u, -38); p.quadraticCurveTo(u + 7, 0, u, 38); } return p; })();
@@ -189,8 +215,8 @@ const WR_X = -4, WR_Y = 44;   // 手腕接在铁拳背面的这一点（剑的�
 function wristFor(H, sa, side) { const d = dir(sa * D2R), n = [-d[1], d[0]]; return [H[0] + WR_X * d[0] + side * WR_Y * n[0], H[1] + WR_X * d[1] + side * WR_Y * n[1]]; }
 const POSE = {
   draw:   { H: [1170, 900], sa: 160, side: -1, hint: [1400, 800] },   // 剑从光里长出来时：低垂在身前
-  salute: { H: [1165, 575], sa: 270, side: 1, hint: [1200, 900] },    // 宣誓礼：剑柄在下颌前，剑身竖直
-  over:   { H: [1140, 330], sa: 245, side: 1, hint: [1040, 560] },    // 举剑过头
+  salute: { H: [1150, 560], sa: 270, side: 1, hint: [1060, 860] },    // 宣誓礼：肘尖朝前下，剑柄在下颌前，剑身竖直
+  over:   { H: [1122, 318], sa: 244, side: 1, hint: [1020, 520] },    // 举剑过头：手臂几乎伸直，高举在头盔前上方
   vigil:  { H: [1110, 820], sa: 90, side: -1, hint: [1340, 800] },    // 拄剑：手臂下垂、前臂前伸，手按在身前的剑柄上，剑尖朝下顿地
 };
 for (const k in POSE) { const p = POSE[k]; Object.assign(p, ik(wristFor(p.H, p.sa, p.side), p.hint)); }
@@ -306,6 +332,9 @@ function eyeGlow(t, a, gold) { // 头盔眼缝里的光
     ctx.fillStyle = g; ctx.fillRect(x - R0, y - R0, R0 * 2, R0 * 2);
     ctx.fillStyle = gold ? 'rgba(255,255,245,.8)' : 'rgba(255,230,200,.9)'; ctx.fillRect(x - 22, y - 1, 44, 2);
   }
+  const st = ctx.createLinearGradient(1250, 0, 1560, 0); // 光痕：从眼缝往后拖出去
+  st.addColorStop(0, 'rgba(255,255,255,0)'); st.addColorStop(.3, gold ? 'rgba(255,246,220,.75)' : 'rgba(255,140,100,.75)'); st.addColorStop(1, 'rgba(255,200,120,0)');
+  ctx.fillStyle = st; ctx.beginPath(); ctx.moveTo(1262, 345); ctx.lineTo(1560, 342 + Math.sin(t * 2) * 3); ctx.lineTo(1560, 346 + Math.sin(t * 2) * 3); ctx.lineTo(1262, 351); ctx.fill();
   ctx.restore();
 }
 function eyeK(t) { return lin(t, .4, 1.2) * (.65 + .2 * Math.sin(t * 3.1) + .15 * beatHit(t)) * (1 + .04 * beatCount(t)); }
@@ -319,6 +348,7 @@ function drawPlume(t, gold) {
 function drawHelmRed(t) {
   drawPlume(t, false);
   ctx.fillStyle = '#1a0504'; ctx.fill(PLUME_HOLDER); redStroke(PLUME_HOLDER, 1.4, 6);
+  darkMetal(COMB, 1370, 220, 80); redStroke(COMB, 1.6, 8);
   darkMetal(HELM, 1330, 330, 260); redStroke(HELM, 2.6, 16);
   darkMetal(RONDEL, 1484, 470, 30); redStroke(RONDEL, 1.6, 8); ctx.strokeStyle = 'rgba(255,110,70,.6)'; ctx.lineWidth = 1.1; ctx.stroke(RONDEL_IN);
   ctx.fillStyle = '#050101'; ctx.fill(SLIT);
@@ -331,8 +361,7 @@ function drawArmRed(t, k) {
   const R = rig(t);
   ctx.save(); ctx.globalAlpha *= k;
   inFrame(R.mU, () => { darkMetal(REREBRACE, 80, 0, 160); redStroke(REREBRACE, 2, 10); ctx.strokeStyle = 'rgba(255,110,70,.5)'; ctx.lineWidth = 1.2; ctx.stroke(RERE_LINES); });
-  inFrame(paulM(R.ua), () => { for (const l of LAMES) { darkMetal(l, 1300, 690, 140); redStroke(l, 1.8, 8); }
-    darkMetal(PAUL, 1300, 600, 200); redStroke(PAUL, 2.2, 12); ctx.strokeStyle = 'rgba(255,110,70,.55)'; ctx.lineWidth = 1.3; ctx.stroke(PAUL_LINES); ctx.lineWidth = .8; ctx.stroke(PAUL_EDGE); });
+  paulDraw(R, false, t);
   inFrame(R.mF, () => {
     darkMetal(VAMB, 80, 0, 160); redStroke(VAMB, 2, 10); ctx.strokeStyle = 'rgba(255,110,70,.5)'; ctx.lineWidth = 1.2; ctx.stroke(VAMB_LINES);
     darkMetal(CUFF, LF, 0, 60); redStroke(CUFF, 1.8, 8); ctx.stroke(CUFF_LINES);
@@ -350,10 +379,10 @@ function couter(R, gold) { // 护肘：杯形肘盘 + 背后一片扇形翼（�
     else { darkMetal(COUTER_WING, 20, 0, 60); redStroke(COUTER_WING, 1.4, 6); darkMetal(COUTER_CUP, 10, 0, 40); redStroke(COUTER_CUP, 1.8, 8); ctx.strokeStyle = 'rgba(255,110,70,.55)'; ctx.lineWidth = 1.1; ctx.stroke(COUTER_RIDGE); }
   });
 }
-const COUTER_WING = P([[-8, -50], [28, -44], [54, -22], [62, 0], [54, 22], [28, 44], [-8, 50], [6, 0]]);
-const COUTER_FLUTE = (() => { const p = new Path2D(); for (const a of [-1.1, -.55, 0, .55, 1.1]) { p.moveTo(4, 0); p.lineTo(4 + Math.cos(a) * 52, Math.sin(a) * 44); } return p; })();
-const COUTER_CUP = P([[-24, -32], [8, -36], [30, -24], [38, 0], [30, 24], [8, 36], [-24, 32]]);
-const COUTER_RIDGE = (() => { const p = new Path2D(); p.moveTo(-6, -32); p.quadraticCurveTo(24, 0, -6, 32); p.moveTo(12, -27); p.quadraticCurveTo(34, 0, 12, 27); return p; })();
+const COUTER_WING = P([[-8, -44], [24, -40], [46, -20], [52, 0], [46, 20], [24, 40], [-8, 44], [6, 0]]);
+const COUTER_FLUTE = (() => { const p = new Path2D(); for (const a of [-1.1, -.55, 0, .55, 1.1]) { p.moveTo(4, 0); p.lineTo(4 + Math.cos(a) * 42, Math.sin(a) * 38); } return p; })();
+const COUTER_CUP = P([[-24, -30], [6, -33], [26, -22], [33, 0], [26, 22], [6, 33], [-24, 30]]);
+const COUTER_RIDGE = (() => { const p = new Path2D(); p.moveTo(-6, -30); p.quadraticCurveTo(20, 0, -6, 30); p.moveTo(10, -24); p.quadraticCurveTo(30, 0, 10, 24); return p; })();
 function emblemRed(t, k) {
   ctx.save(); ctx.globalAlpha *= k;
   ctx.fillStyle = '#1e0605'; ctx.fill(P_SHIELD); redStroke(P_SHIELD, 2, 10); ctx.strokeStyle = 'rgba(255,110,70,.45)'; ctx.lineWidth = 1; ctx.stroke(SHIELD_IN);
@@ -383,6 +412,7 @@ FIG.red = (t, k) => {
   ctx.save(); ctx.globalAlpha = k; ctx.setLineDash([3400 * eio(k), 6000]); redStroke(P_BODY, 2.6, 16); ctx.restore();
   ctx.save(); ctx.globalAlpha = k * .6; ctx.save(); ctx.clip(P_BODY); ctx.strokeStyle = 'rgba(255,120,80,.6)'; ctx.lineWidth = 1.4; ctx.stroke(BODY_LINES); ctx.restore(); ctx.restore();
   emblemRed(t, k);
+  ctx.save(); ctx.globalAlpha = k; darkMetal(FAR_PAUL, 1640, 620, 90); redStroke(FAR_PAUL, 2, 10); ctx.strokeStyle = 'rgba(255,110,70,.5)'; ctx.lineWidth = 1.1; ctx.stroke(FAR_PAUL_LINES); ctx.restore();
   withHead(t, () => { ctx.save(); ctx.globalAlpha = k; drawHelmRed(t); ctx.restore(); });
   drawArmRed(t, k);
 };
@@ -410,10 +440,10 @@ function rimLight(path, r = 760, a = .3) {
   ctx.fillStyle = g; ctx.fillRect(-4000, -4000, 8000, 8000); ctx.restore();
 }
 function bodyFill(path) {
-  const g = ctx.createLinearGradient(0, 200, 0, 1080); g.addColorStop(0, '#221a0d'); g.addColorStop(.5, '#130e07'); g.addColorStop(1, '#080604');
+  const g = ctx.createLinearGradient(0, 200, 0, 1080); g.addColorStop(0, '#2a2010'); g.addColorStop(.5, '#161008'); g.addColorStop(1, '#090604');
   ctx.fillStyle = g; ctx.fill(path); rimLight(path);
 }
-function armorFill(path) { ctx.fillStyle = '#17110a'; ctx.fill(path); rimLight(path, 520, .36); }
+function armorFill(path) { ctx.fillStyle = '#1e160b'; ctx.fill(path); rimLight(path, 560, .44); }
 function sheen(path, spots) { // 金属高光：几块柔和的亮斑
   ctx.save(); ctx.clip(path); ctx.globalCompositeOperation = 'lighter';
   for (const [x, y, rx, ry, a] of spots) { ctx.save(); ctx.translate(x, y); ctx.scale(rx, ry); const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1); g.addColorStop(0, `rgba(255,222,160,${a})`); g.addColorStop(1, 'rgba(255,200,120,0)'); ctx.fillStyle = g; ctx.fillRect(-1, -1, 2, 2); ctx.restore(); }
@@ -429,7 +459,8 @@ function rivets(list, gold) { for (const [x, y, r = 3.5] of list) { const p = ci
 function drawHelmGold(t) {
   drawPlume(t, true);
   armorFill(PLUME_HOLDER); glowStroke(PLUME_HOLDER, 1.4, 6);
-  armorFill(HELM); sheen(HELM, [[1350, 262, 70, 26, .22], [1252, 392, 22, 40, .16], [1440, 330, 26, 60, .1], [1310, 470, 40, 20, .1]]);
+  armorFill(COMB); sheen(COMB, [[1366, 214, 50, 8, .3]]); glowStroke(COMB, 1.8, 10); glowStroke(COMB_LINE, .9, 4);
+  armorFill(HELM); sheen(HELM, [[1350, 262, 80, 28, .34], [1252, 392, 22, 44, .24], [1450, 330, 26, 70, .14], [1310, 470, 44, 20, .14]]);
   gleam(HELM, t, 1200, 1520);
   glowStroke(HELM, 2.8, 16);
   ctx.fillStyle = '#050402'; ctx.fill(SLIT);
@@ -441,11 +472,22 @@ function drawHelmGold(t) {
 }
 function drawBodyGold(t) {
   const cp = capePath(t, true);
-  bodyFill(cp.path); glowStroke(cp.path, 2.2, 14); glowStroke(cp.folds, 1.2, 6);
-  bodyFill(P_BODY); sheen(P_BODY, [[1300, 700, 90, 60, .14], [1250, 760, 30, 80, .12], [1460, 940, 120, 20, .07], [1420, 640, 100, 30, .08]]);
+  { // 披风：深红底 + 金边，褶子上一层柔光
+    const g = ctx.createLinearGradient(1600, 580, 1900, 1100); g.addColorStop(0, '#5a1812'); g.addColorStop(.5, '#34100b'); g.addColorStop(1, '#160504');
+    ctx.fillStyle = g; ctx.fill(cp.path); rimLight(cp.path, 700, .22);
+    ctx.save(); ctx.clip(cp.path); ctx.globalCompositeOperation = 'lighter'; ctx.strokeStyle = 'rgba(255,120,80,.12)'; ctx.lineWidth = 22; ctx.filter = 'none'; ctx.stroke(cp.folds); ctx.restore();
+    glowStroke(cp.path, 2.4, 14); glowStroke(cp.folds, 1, 5, '#e0a050');
+  }
+  bodyFill(P_BODY); sheen(P_BODY, [[1290, 700, 90, 70, .24], [1232, 740, 26, 90, .2], [1440, 940, 120, 20, .1], [1440, 640, 110, 34, .14], [1560, 760, 50, 90, .1]]);
   gleam(P_BODY, t, 1150, 1700);
   glowStroke(P_BODY, 3, 20);
   ctx.save(); ctx.clip(P_BODY); glowStroke(BODY_LINES, 1.4, 6); glowStroke(BODY_ETCH, .7, 3, '#c9944a'); ctx.restore();
+  armorFill(FAR_PAUL); sheen(FAR_PAUL, [[1640, 590, 50, 14, .26]]); glowStroke(FAR_PAUL, 2.2, 12); glowStroke(FAR_PAUL_LINES, 1.1, 5);
+  { // 胸甲中脊上一道锐利的高光
+    ctx.save(); ctx.clip(P_BODY); ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createLinearGradient(0, 600, 0, 880); g.addColorStop(0, 'rgba(255,240,200,0)'); g.addColorStop(.35, 'rgba(255,240,200,.5)'); g.addColorStop(1, 'rgba(255,240,200,0)');
+    ctx.strokeStyle = g; ctx.lineWidth = 5; ctx.shadowColor = '#ffd27a'; ctx.shadowBlur = 16; ctx.beginPath(); ctx.moveTo(1342, 612); ctx.bezierCurveTo(1312, 700, 1310, 790, 1332, 866); ctx.stroke(); ctx.restore();
+  }
   for (const [x, y] of BODY_RIVETS) { const p = circ(x, y, 3.5); armorFill(p); glowStroke(p, 1, 4); }
   // 纹章：心亮起来，之后平稳地跳
   armorFill(P_SHIELD); glowStroke(P_SHIELD, 2.2, 12); glowStroke(SHIELD_IN, 1, 4);
@@ -464,9 +506,7 @@ function heartGlow(t) { if (t < OATH) return 0; const ph = ((t - OATH) % HB_PERI
 function drawArmGold(t, R) {
   const vis = bladeVis(t), sa = swordA(t);
   inFrame(R.mU, () => { armorFill(REREBRACE); sheen(REREBRACE, [[80, -14, 70, 9, .22]]); glowStroke(REREBRACE, 2.2, 10); glowStroke(RERE_LINES, 1.1, 5); });
-  inFrame(paulM(R.ua), () => { for (const l of LAMES) { armorFill(l); sheen(l, [[1300, 680, 90, 8, .16], [1300, 702, 90, 8, .14], [1300, 724, 80, 8, .12]]); glowStroke(l, 2, 9); }
-    armorFill(PAUL); sheen(PAUL, [[1296, 584, 84, 22, .3], [1300, 640, 90, 10, .14]]); gleam(PAUL, t, 1180, 1440);
-    glowStroke(PAUL, 2.6, 14); glowStroke(PAUL_LINES, 1.4, 6); glowStroke(PAUL_EDGE, .7, 3, '#c9944a'); rivets(PAUL_RIVETS, true); });
+  paulDraw(R, true, t);
   inFrame(R.mF, () => { armorFill(VAMB); sheen(VAMB, [[70, -12, 60, 8, .22]]); glowStroke(VAMB, 2.2, 10); glowStroke(VAMB_LINES, 1.1, 5); armorFill(CUFF); glowStroke(CUFF, 2, 9); glowStroke(CUFF_LINES, 1.1, 5); });
   couter(R, true);
   if (t < SUMMON0 - .15) { // 剑出现之前：还是那只张开的手，在闪白里握紧

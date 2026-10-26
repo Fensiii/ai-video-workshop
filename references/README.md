@@ -11,6 +11,7 @@
 | 路径 | 时长 | 原始分辨率 | 一句话 |
 |---|---|---|---|
 | `data-history/nasdaq-55y.mp4` | 3:14 | 1920×3560（中间 1920×1080 为画面） | 纳斯达克 55 年走势动画，比特币版就是照它一比一做的 |
+| `lyric-mv/dahua-monologue-faruxue.mp4` | 0:53 | 1560×720 | 《大话西游》至尊宝独白 + BGM《发如雪》；画面是音频剪辑软件波形界面 + 蓝色雪花特效，底部白色楷体单行字幕（抖音“pov 配歌”类） |
 | `lyric-mv/square-couple-planet.mp4` | 0:56 | 1024×576 | 方块小人情侣在小星球上，扁平卡通 + 底部歌词条 |
 | `lyric-mv/paper-puzzle-collage.mp4` | 0:56 | 1280×720 | 同一首歌的另一版：纸艺拼贴 + 拼图元素，歌词逐字卡片弹出 |
 | `knowledge-explainer/dark-gold/survivorship-bias.mp4` | 2:26 | 1024×576 | 幸存者偏差：猫坠楼 → 二战飞机弹孔 → 还愿画 → 瓦尔德生平 |
@@ -34,6 +35,7 @@
 - `paper-puzzle-collage`：纸张纹理、撕边贴纸、拼图块作为贯穿意象；歌词逐字放在小纸片上依次弹出，
   关键词放大变色（如“爱炙热的你”红字）。
 - 适合做法：skia 或 HTML/Canvas 画矢量角色；时间轴严格对齐歌词 LRC。
+- `dahua-monologue-faruxue`：经典台词配流行歌的“文案 MV”。原片画面只是剪辑软件界面，价值在**音频和台词时间轴**；20 句台词逐帧检测出的时间轴见 `works/2026-10-26_dahua-faruxue/src/lines.json`。
 
 ### 3. 知识科普·暗金风 `knowledge-explainer/dark-gold/`
 同一作者（Iwanau）的系列，视觉语言高度一致，可当一套模板：

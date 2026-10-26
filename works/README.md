@@ -6,6 +6,7 @@
 | 目录 | 成片 | 时长 | 规格 | 说明 |
 |---|---|---|---|---|
 | `2026-10-17_bitcoin-2010-2026/` | `bitcoin_2010-2026_16x9.mp4` | 3:14 | 1920×1080 30fps | 比特币 2010–2026 走势，一比一复刻 `references/data-history/nasdaq-55y.mp4`；只有合成音效；含镜头晃动、推近和图上标注。生成脚本在 `src/`，经验见 skill `data-history-video` |
+| `2026-10-26_dahua-faruxue/` | `dahua-faruxue_9x16.mp4` | 0:53 | 1080×1920 30fps | 古风抖音竖屏：《大话西游》至尊宝独白 × 周杰伦《发如雪》（音频取自 `references/lyric-mv/dahua-monologue-faruxue.mp4`，响度归一到 −14 LUFS）。程序生成水墨远山、圆月、梅枝、孤舟、落雪，马善政楷书字幕逐字晕开，“我爱你”“一万年”金色。`subtitles.srt/.lrc`；生成脚本 `src/`（PIL 逐帧，字体走 npm `@expo-google-fonts`） |
 | `2026-10-17_song-mv-duanfa/` | `duanfa-girl-mv_16x9.mp4` | 1:10 | 1920×1080 | 《幻昼》×《短发女孩》×《take me hand》混剪，带歌词字幕；`lyrics.ass` / `lyrics.lrc` 为歌词时间轴 |
 
 ## 不在库里的旧作品

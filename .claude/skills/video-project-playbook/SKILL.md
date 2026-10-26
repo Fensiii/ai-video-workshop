@@ -15,7 +15,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 特斯拉，凭什么？（无配音） | `tesla-evolution-explainer` / `tesla-success/` | 2分38秒、字幕 + 合成配乐 | Canvas/DOM + Playwright + numpy 配乐 |
 | 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
 | 大话西游 × 发如雪（古风） | `works/2026-10-26_dahua-faruxue/`（成片 + `src/`） | 53s 竖屏 9:16，台词字幕 + 原音轨 | PIL 逐帧（水墨山/月/梅/舟/雪） |
-| 上海下雪 × 认真的雪 | `works/2026-10-26_shanghai-snow/`（成片 + `src/`） | 24.5s 竖屏 9:16，歌词字幕 + 原音轨 | PIL + numpy 逐帧（陆家嘴天际线/江面倒影/积雪） |
+| 上海下雪 × 认真的雪 | `works/2026-10-26_shanghai-snow/`（成片 + `src/`） | 24.5s 竖屏 9:16，歌词字幕 + 原音轨 | three.js 3D + Playwright 截帧，PIL 叠字幕 |
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
@@ -67,6 +67,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | **skia-python 逐帧** | 发光曲线、粒子、透视图表、矢量变形，追求电影感 | 比特币、特斯拉 2D 动画 | 0.3–0.7 s/帧；numpy 半分辨率算光效再 kPlus 叠加 |
 | **HTML/Canvas + Playwright 截帧** | 字幕多、版式多、DOM 排版方便的科普/解说 | 两个特斯拉科普 | 页面暴露 `window.renderAt(t)`，纯函数按时间绘制；截 JPEG 管道给 ffmpeg |
 | **ffmpeg 剪辑 + ASS 字幕** | 已有素材的混剪、MV、加歌词 | 歌曲混剪 | ASS 控字体/描边/淡入淡出，另出 LRC 方便复用 |
+| **three.js 3D + Playwright 截帧** | 真实地标/城市夜景，要立体感、透视、倒影 | 上海下雪 v2 | `renderAt(t)` 无状态；SwiftShader WebGL 可用；Reflector 水面；layers 控制哪些东西进倒影 |
 | Remotion / HyperFrames | 用户点名或需要 React 组件化 | skills 库 | 读 `claude/add-video-toolkit-skills` 分支的 `CLAUDE.md` 路由 |
 
 `renderAt(t)` 必须是**无状态**的（同一 t 永远画出同一帧），这样才能任意分段并行、随时预览。
@@ -112,6 +113,13 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 - 字幕放 y≈1340（抖音底部文案区和右侧按钮之外），逐字淡入 + 轻微位移/去模糊，【】关键词换色。
 - 字体：古风用 Ma Shan Zheng（楷书）/ Zhi Mang Xing（行书）；现代用 Noto Serif SC 600 + 字距；都从 npm `@expo-google-fonts` 取。
 - 静态背景（天际线、山）一次性画好（2× 超采样 + 泛光），每帧只叠动态层：PIL 单帧 0.3–0.7s，4 路并行几分钟出片。
+- **用户嫌“楼不立体、排列不对”**（上海下雪 v1 → v2）：平面剪影不够，改 three.js 真 3D。地标按真实坐标摆放，
+  先用 WebSearch 查 WGS84 坐标（注意国内地图是 GCJ-02，和 WGS84 差约 500m，混用会摆错），再从真实机位算方位角和视高；
+  外滩看陆家嘴从左到右是明珠→金茂→环球→上海中心，明珠最近所以显得最高，上海中心楼顶约与明珠上球齐平。
+- three.js 无头渲染：`chromium.launch({args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']})`，
+  ES module 要起 `python3 -m http.server`；1080×1920 + MSAA + Reflector + Bloom 约 2.7s/帧，两路并行约 2.3s/帧。
+  shader 里的 hash/noise 不要喂几百米量级的世界坐标（sin 精度丢失出现块状花纹），减去局部原点再算。
+  粒子雪要只在视锥内生成，否则 98% 的粒子在画外。竖线要直就用移轴（改 projectionMatrix.elements[9]），别抬头仰拍。
 - 坑：等待后台渲染别用 `pgrep -f "render.py --seg"`——等待循环自己的命令行也匹配，会永远等下去；
   用一个脚本 `&` 起 4 路再 `wait`，前台跑完即可。`rm` 带 `cd` 的相对通配会被安全检查拦下，输出按名覆盖即可。
 

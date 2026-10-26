@@ -1,6 +1,6 @@
 ---
 name: video-project-playbook
-description: 本仓库历次视频项目的经验总结与可复用代码索引（特斯拉进化 2D 动画、特斯拉进化科普配音版、特斯拉凭什么无配音版、歌曲混剪 MV 加歌词、比特币历史走势复刻）。用户要做新视频、复刻参考视频、做科普/解说/动画/歌词 MV、问“上次怎么做的”时先读这里，再决定复用哪套代码。
+description: 本仓库历次视频项目的经验总结与可复用代码索引（特斯拉进化 2D 动画、特斯拉进化科普配音版、特斯拉凭什么无配音版、歌曲混剪 MV 加歌词、比特币历史走势复刻、《成功》抖音卡点短片）。用户要做新视频、复刻参考视频、做科普/解说/动画/歌词 MV、问“上次怎么做的”时先读这里，再决定复用哪套代码。
 ---
 
 # 视频项目经验手册（ai-video-workshop）
@@ -15,6 +15,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 特斯拉，凭什么？（无配音） | `tesla-evolution-explainer` / `tesla-success/` | 2分38秒、字幕 + 合成配乐 | Canvas/DOM + Playwright + numpy 配乐 |
 | 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
+| 《成功》抖音卡点 | `works/2026-10-26_success-funk/`（成片 + `src/`） | 32s、1080p60，用户给的音源，节拍字效 + 全套特效 | skia + OpenCV 线性光 HDR 逐帧合成 |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。
@@ -50,7 +51,12 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
   `@expo-google-fonts/noto-serif-sc`、`noto-sans-sc`、`inter`（内含 TTF，可直接给 skia/PIL 用）；
   网页项目用 `@fontsource/noto-serif-sc`，渲染前 `await document.fonts.ready`。
 - **skia-python** 缺 `libEGL.so.1`：把 `/opt/pw-browsers/chromium-*/chrome-linux/libEGL.so`
-  软链成 `libEGL.so.1`，目录加进 `LD_LIBRARY_PATH`。
+  软链成 `libEGL.so.1`，目录加进 `LD_LIBRARY_PATH`。（2026-10-26 起 apt 能用了，直接 `apt-get install libegl1` 更省事）
+- **apt 可用**（archive.ubuntu.com 能连）：`fonts-noto-cjk-extra`（思源黑/宋全字重，含 Heavy）、
+  `fonts-smiley-sans`（得意黑）、`fonts-lxgw-wenkai`（霞鹜文楷）一条命令装好，比 npm 拆字体省事。
+- numpy 2 的类型提升：`np.float64` 标量会把 float32 数组升成 float64，传给 `cv2.remap` 直接报错；坐标先 `float()`。
+- 整帧按通道归约（`img.max(axis=2)`）要 ~95ms，`cv2.cvtColor(..., RGB2GRAY)`/`cv2.max` 只要几毫秒；
+  1080p 的逐像素运算尽量用 cv2（`transform`/`multiply`/`scaleAdd`），numpy 广播慢 3–10 倍。
 - **Playwright**：Chromium 已预装，不要 `playwright install`；
   `NODE_PATH=$(npm root -g) node render.js`，必要时 `CHROMIUM_PATH=/opt/pw-browsers/chromium`。
 - 多进程渲染用 fork；随机数种子别用 Python `hash()`（每进程不同），用 `zlib.crc32` 或固定种子。
@@ -107,6 +113,18 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 到事件时减速；暴跌/黑天鹅镜头冲击晃动（7–16Hz），震荡行情手持晃动；
 重要节点推近放大 + 锁定框、价格日期标签、ATH 虚线、涨跌测量箭头；音效全合成。
 
+### 6. 《成功》抖音卡点短片（v2 精修版）
+- 用户只给音源、不要参考旧素材：先拆音频——起音拟合 16 分音符网格（105.7 BPM），主节奏每小节
+  0/6/10 格最重（3-3-2），字落在这三个格上最卡点；格子强度存 `events.json`，驱动推镜和抖动。
+- 线性光 HDR + ACES：颜色按 sRGB 写、转线性合成，最后色调映射。**均匀加白 flash > 0.1 就把黑场抬灰**，
+  重拍改用曝光脉冲 `pop`（只放大亮部）+ 很小的 flash；背光体积光 ≤ 0.4、辉光 0.5 左右，多层叠加最容易过曝。
+- 金属字：skia 出字形蒙版 → 高斯模糊当高度图求法线 → 漫反射 + 高光 + 带“地平线”暗带的环境渐变 = 金箔质感；
+  亚像素平移叠出厚度（extrude），再加地面倒影、扫光。
+- 运动模糊：按快门内角点位移自适应采样 1–12 次；镜头大位移烘焙进背景图，只对剩余变换多次采样。
+- 冲击帧：重拍后两帧黑底白剪影 + 放射线，第二帧反相；剪影只取本帧时刻的字，倒影/投影不算。
+- `lin()` 坑：`(1,1,1)` 被当成 0..1 浮点 = 白色，背景整片发灰；整数元组一律按 0..255。
+- 1080p60 32 秒，4 进程约 10 分钟；母版 CRF12 ≈ 265MB，两遍编码 20Mbps ≈ 80MB。
+
 ## 五、用户偏好（已确认过的）
 
 - 回复用中文；视频默认 16:9 1080p。
@@ -115,6 +133,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 - 要求“只要音效不要配音”时，不加人声、不加音乐。
 - 数字要和真实数据一致；不确定的事实不编，写得保守并告知。
 - 每次做完要提交推送；文件别超 GitHub 100MB。
+- 说“质量、画质、特效全部到位”时：1080p60、运动模糊、体积光/辉光/冲击帧/粒子都要有，并逐帧审片控制过曝。
 
 ## 六、新项目起手清单
 

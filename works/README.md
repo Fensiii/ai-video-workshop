@@ -7,7 +7,7 @@
 |---|---|---|---|---|
 | `2026-10-17_bitcoin-2010-2026/` | `bitcoin_2010-2026_16x9.mp4` | 3:14 | 1920×1080 30fps | 比特币 2010–2026 走势，一比一复刻 `references/data-history/nasdaq-55y.mp4`；只有合成音效；含镜头晃动、推近和图上标注。生成脚本在 `src/`，经验见 skill `data-history-video` |
 | `2026-10-17_song-mv-duanfa/` | `duanfa-girl-mv_16x9.mp4` | 1:10 | 1920×1080 | 《幻昼》×《短发女孩》×《take me hand》混剪，带歌词字幕；`lyrics.ass` / `lyrics.lrc` 为歌词时间轴 |
-| `2026-10-26_success-funk/` | `success-funk_16x9.mp4` | 0:32 | 1920×1080 30fps | 抖音节拍字效短片，主题“成功”；音源取自用户上传的 FUNK MANDALA 片段，全片卡点（约 105 BPM，5.1s 起 drop）；黑金配色、成长曲线贯穿全片，不参考任何旧素材。生成脚本 `src/render.py`（PIL 逐帧 + ffmpeg） |
+| `2026-10-26_success-funk/` | `success-funk_16x9.mp4` | 0:32 | 1920×1080 60fps | 抖音节拍字效短片《成功》v2（精修版）：音源为用户上传的 FUNK MANDALA 片段（原 AAC 无损复制），按 16 分音符网格卡点；15 段分镜各有独立场景（体积光、金属厚金字、碎裂、故障、台阶、星空时钟、雨幕、追光、日出、山巅），运动模糊、冲击帧、冲击波折射、辉光、镜头光晕、ACES 调色；底部“成功进度”曲线贯穿全片。不参考任何旧素材。另附抖音封面 `cover.jpg`；生成脚本与依赖见 `src/README.md`（skia + OpenCV 线性光 HDR 逐帧合成） |
 
 ## 不在库里的旧作品
 

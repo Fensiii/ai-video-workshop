@@ -690,7 +690,7 @@ const PARA_TOP = 7.6;
     c.fillStyle = 'rgba(20,20,24,0.8)'; c.fillRect(0, 0, 3, h);
   });
   gran.repeat.set(1, 60);
-  const para = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.6, 400), new THREE.MeshStandardMaterial({ map: gran, roughness: 0.85, metalness: 0.05, color: col('#c8c4d4'), emissive: col('#2a2630'), emissiveIntensity: 0.6 }));
+  const para = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.6, 400), new THREE.MeshStandardMaterial({ map: gran, roughness: 0.85, metalness: 0.05, color: col('#c8c4d4'), emissive: col('#3a3646'), emissiveIntensity: 1.0 }));
   para.position.set(PARA_X + 0.475, PARA_TOP - 0.8, CAM0.z);
   para.layers.set(1); scene.add(para);
 }
@@ -701,7 +701,7 @@ const snowCapMat = new THREE.ShaderMaterial({
   transparent: true, fog: true,
   uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { thick: { value: 0.02 }, cover: { value: 0.3 }, time: { value: 0 }, lamp: { value: lampPos },
     origin: { value: new THREE.Vector2(PARA_X, CAM0.z) } }]),
-  vertexShader: `uniform float thick; uniform vec2 origin; varying vec3 vW; varying vec2 vQ; varying float vCov;
+  vertexShader: `uniform float thick; uniform vec2 origin; varying vec3 vW; varying vec2 vQ;
     ${NOISE_GLSL}
     #include <fog_pars_vertex>
     void main(){ vec4 wp = modelMatrix * vec4(position, 1.0);
@@ -710,20 +710,22 @@ const snowCapMat = new THREE.ShaderMaterial({
       float n = fbm(q * vec2(4.0, 1.3)) + 0.25 * noise(q * 22.0);
       wp.y += thick * (0.3 + 0.7 * prof) * (0.45 + 0.9 * n);
       vW = wp.xyz; vQ = q;
-      vCov = fbm(q * vec2(9.0, 3.5) + 7.0) * 0.35 + 0.65 * noise(q * 70.0);
       vec4 mvPosition = viewMatrix * wp; gl_Position = projectionMatrix * mvPosition;
       #include <fog_vertex>
     }`,
-  fragmentShader: `uniform float cover, time; uniform vec3 lamp; varying vec3 vW; varying vec2 vQ; varying float vCov;
+  fragmentShader: `uniform float cover, time; uniform vec3 lamp; varying vec3 vW; varying vec2 vQ;
     ${NOISE_GLSL}
     #include <fog_pars_fragment>
     void main(){
-      float a = smoothstep(vCov - 0.03, vCov + 0.03, cover);
+      vec2 rq = mat2(0.866, 0.5, -0.5, 0.866) * vQ;                       // 转 30°，打破值噪声的方格感
+      float vCov = 0.45 * fbm(vQ * vec2(6.0, 2.5) + 7.0) + 0.55 * fbm(rq * 26.0 + 3.0);   // 逐像素：细碎雪粒
+      float a = smoothstep(vCov - 0.12, vCov + 0.03, cover);
       if (a < 0.02) discard;
       vec3 nr = normalize(cross(dFdx(vW), dFdy(vW))); if (nr.y < 0.0) nr = -nr;
       float sky = 0.55 + 0.45 * nr.y;                                         // 天光
       float city = clamp(dot(nr, normalize(vec3(1.0, 0.45, 0.15))), 0.0, 1.0);  // 对岸城市光
       vec3 c = vec3(0.30, 0.33, 0.44) * sky + vec3(0.42, 0.30, 0.42) * city * 0.6;
+      c *= 0.7 + 0.3 * a;                                                   // 薄雪偏灰
       c *= 0.9 + 0.2 * noise(vQ * 40.0);
       vec3 L = lamp - vW; float ld = length(L);
       float lw = exp(-pow(ld / 12.0, 2.0)) * clamp(dot(nr, L / ld), 0.0, 1.0);

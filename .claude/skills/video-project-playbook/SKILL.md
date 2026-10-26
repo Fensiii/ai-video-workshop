@@ -14,6 +14,8 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 特斯拉车型进化史（科普） | `tesla-evolution-explainer` / `tesla-evolution/` | 4分20秒、中文配音 + 字幕 | HTML 动画 + Playwright 截帧 + 离线 TTS |
 | 特斯拉，凭什么？（无配音） | `tesla-evolution-explainer` / `tesla-success/` | 2分38秒、字幕 + 合成配乐 | Canvas/DOM + Playwright + numpy 配乐 |
 | 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
+| 大话西游 × 发如雪（古风） | `works/2026-10-26_dahua-faruxue/`（成片 + `src/`） | 53s 竖屏 9:16，台词字幕 + 原音轨 | PIL 逐帧（水墨山/月/梅/舟/雪） |
+| 上海下雪 × 认真的雪 | `works/2026-10-26_shanghai-snow/`（成片 + `src/`） | 24.5s 竖屏 9:16，歌词字幕 + 原音轨 | PIL + numpy 逐帧（陆家嘴天际线/江面倒影/积雪） |
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
@@ -102,7 +104,18 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
   每句 `\fad(120,120)`，片头 `\fad(400,400)`；同时导出 LRC。
 - 歌词时间轴要逐句对准演唱；混剪接点放在乐句边界。
 
-### 5. 比特币历史走势复刻
+### 5. “pov 配歌”文案/歌词视频（大话西游 × 发如雪、上海下雪 × 认真的雪）
+- 用户给的是抖音“剪辑软件界面 + 字幕”类视频：**只取音频和字幕**，画面按文案主题重做，默认竖屏 1080×1920。
+- 字幕时间轴自动检测：`ffmpeg -vf fps=10,crop=<字幕带>,format=gray` 抽帧 → 每帧统计亮度 >150 的像素数 →
+  连续高亮段就是一句；拼几帧字幕条读出文字。起点取首帧，终点取末帧 +0.1s（自己的淡出占最后 0.4s）。
+- 原音轨常常削波（真峰值 >0 dB、−8~−10 LUFS）：两遍 `loudnorm=I=-14:TP=-1.5` + 首尾 afade。
+- 字幕放 y≈1340（抖音底部文案区和右侧按钮之外），逐字淡入 + 轻微位移/去模糊，【】关键词换色。
+- 字体：古风用 Ma Shan Zheng（楷书）/ Zhi Mang Xing（行书）；现代用 Noto Serif SC 600 + 字距；都从 npm `@expo-google-fonts` 取。
+- 静态背景（天际线、山）一次性画好（2× 超采样 + 泛光），每帧只叠动态层：PIL 单帧 0.3–0.7s，4 路并行几分钟出片。
+- 坑：等待后台渲染别用 `pgrep -f "render.py --seg"`——等待循环自己的命令行也匹配，会永远等下去；
+  用一个脚本 `&` 起 4 路再 `wait`，前台跑完即可。`rm` 带 `cd` 的相对通配会被安全检查拦下，输出按名覆盖即可。
+
+### 6. 比特币历史走势复刻
 详见 `data-history-video`。要点：数据从 Coin Metrics GitHub CSV 取（有半年延迟）；
 到事件时减速；暴跌/黑天鹅镜头冲击晃动（7–16Hz），震荡行情手持晃动；
 重要节点推近放大 + 锁定框、价格日期标签、ATH 虚线、涨跌测量箭头；音效全合成。

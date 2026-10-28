@@ -1,6 +1,6 @@
 ---
 name: video-project-playbook
-description: 本仓库历次视频项目的经验总结与可复用代码索引（特斯拉进化 2D 动画、特斯拉进化科普配音版、特斯拉凭什么无配音版、歌曲混剪 MV 加歌词、比特币历史走势复刻）。用户要做新视频、复刻参考视频、做科普/解说/动画/歌词 MV、问“上次怎么做的”时先读这里，再决定复用哪套代码。
+description: 本仓库历次视频项目的经验总结与可复用代码索引（特斯拉进化 2D 动画、特斯拉进化科普配音版、特斯拉凭什么无配音版、歌曲混剪 MV 加歌词、比特币历史走势复刻、以太坊/Solana 英文 YouTube 版）。用户要做新视频、复刻参考视频、做科普/解说/动画/歌词 MV、问“上次怎么做的”时先读这里，再决定复用哪套代码。
 ---
 
 # 视频项目经验手册（ai-video-workshop）
@@ -15,6 +15,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 特斯拉，凭什么？（无配音） | `tesla-evolution-explainer` / `tesla-success/` | 2分38秒、字幕 + 合成配乐 | Canvas/DOM + Playwright + numpy 配乐 |
 | 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
+| 以太坊 2015–2026、Solana 2020–2026（英文，发 YouTube） | `works/2026-10-28_ethereum-2015-2026/`、`works/2026-10-28_solana-2020-2026/`（共用 `src/`，`ASSET=eth/sol`） | 3分09秒 / 2分30秒、英文、绿涨红跌、只要音效，附封面和上传文案 | 比特币那套改成多资产配置 |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。
@@ -49,8 +50,12 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 - **字体**：系统只有文泉驿。好看的中文字体走 npm：
   `@expo-google-fonts/noto-serif-sc`、`noto-sans-sc`、`inter`（内含 TTF，可直接给 skia/PIL 用）；
   网页项目用 `@fontsource/noto-serif-sc`，渲染前 `await document.fonts.ready`。
-- **skia-python** 缺 `libEGL.so.1`：把 `/opt/pw-browsers/chromium-*/chrome-linux/libEGL.so`
-  软链成 `libEGL.so.1`，目录加进 `LD_LIBRARY_PATH`。
+- **skia-python** 缺 `libEGL.so.1`：旧办法是把 `/opt/pw-browsers/chromium-*/chrome-linux/libEGL.so`
+  软链成 `libEGL.so.1`；新版 Chromium 的 libEGL 不导出 egl 符号（报 `undefined symbol: eglQueryString`），
+  改用 3 个空函数的桩库（`works/2026-10-28_ethereum-2015-2026/src/egl_stub.c`，gcc 一行编出来），目录加进 `LD_LIBRARY_PATH`。
+- **行情数据**：Binance 公开数据 S3 桶 `s3-ap-northeast-1.amazonaws.com/data.binance.vision` 能访问，
+  日线到昨天；Coin Metrics GitHub 有半年延迟。详见 `data-history-video`。
+- 英文字体：`@expo-google-fonts/playfair-display`（标题衬线）+ `inter`。
 - **Playwright**：Chromium 已预装，不要 `playwright install`；
   `NODE_PATH=$(npm root -g) node render.js`，必要时 `CHROMIUM_PATH=/opt/pw-browsers/chromium`。
 - 多进程渲染用 fork；随机数种子别用 Python `hash()`（每进程不同），用 `zlib.crc32` 或固定种子。
@@ -107,6 +112,15 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 到事件时减速；暴跌/黑天鹅镜头冲击晃动（7–16Hz），震荡行情手持晃动；
 重要节点推近放大 + 锁定框、价格日期标签、ATH 虚线、涨跌测量箭头；音效全合成。
 
+### 6. 以太坊 / Solana 英文版（YouTube）
+- 用户说“参考比特币的视频做一个以太币和 solana 的，发 YouTube，要英文”：理解为同一风格各做一支英文片。
+- 代码改成多资产：`cfg_eth.py` / `cfg_sol.py` 放全部故事和文案，`ASSET=eth|sol` 切换；
+  `python3 common.py` 自检卡片上每个数字（收盘价、区间涨跌）都和数据一致。
+- 英文版改动：Playfair Display + Inter 字体、绿涨红跌、标题自动缩字号、HUD 文案英文化；
+  整数关口改成时间锚点；结尾全景图按全史最高/最低自动适配，不和总结文字重叠。
+- 交付包：成片（两遍编码 ≤95MB）、1280×720 封面 `cover.jpg`、`youtube.md`（标题、带章节的简介、标签）。
+- 音频按 YouTube 的 −14 LUFS。
+
 ## 五、用户偏好（已确认过的）
 
 - 回复用中文；视频默认 16:9 1080p。
@@ -115,6 +129,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 - 要求“只要音效不要配音”时，不加人声、不加音乐。
 - 数字要和真实数据一致；不确定的事实不编，写得保守并告知。
 - 每次做完要提交推送；文件别超 GitHub 100MB。
+- 发 YouTube 的英文片：画面文字全英文、西方涨跌配色，顺手给封面和上传文案。
 
 ## 六、新项目起手清单
 

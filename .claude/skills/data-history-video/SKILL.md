@@ -1,6 +1,6 @@
 ---
 name: data-history-video
-description: 复刻/制作“资产历史走势”类数据动画视频（如纳斯达克 55 年、比特币 16 年）。当用户上传参考视频要求“一比一”换成另一个资产/指数，或要求做价格历史回顾动画、加镜头晃动/放大/标注、只要音效不要配音时使用。
+description: 复刻/制作“资产历史走势”类数据动画视频（如纳斯达克 55 年、比特币 16 年、以太坊/Solana 英文 YouTube 版）。当用户上传参考视频要求“一比一”换成另一个资产/指数，或要求做价格历史回顾动画、加镜头晃动/放大/标注、只要音效不要配音、做英文版发 YouTube 时使用。
 ---
 
 # 数据历史走势视频：经验与流程
@@ -10,6 +10,11 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 - `render.py`：skia 逐帧渲染（背景/图表/特效/HUD/片头片尾/镜头 FX）
 - `audio.py`：纯合成音效轨（无配音、无音乐素材）
 - `run_render.py`：多进程分段渲染 + ffmpeg 拼接
+
+**多资产 + 英文版（YouTube）**：`works/2026-10-28_ethereum-2015-2026/src/`（以太坊、Solana 共用一套代码，
+`ASSET=eth|sol` 切换）。新资产优先从这套起步：故事和文案全在 `cfg_<资产>.py`，
+`common.py` 自检所有上屏数字，另有 `finalize.py`（音效→响度→两遍编码）、`cover.py`（YouTube 封面）、
+`youtube_meta.py`（标题/简介/章节/标签）。
 
 ## 1. 分析参考视频（先做，别凭印象）
 1. `ffprobe` 看时长/分辨率/音轨。抖音视频常是竖版长画布，16:9 内容在中间：
@@ -23,12 +28,20 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 
 ## 2. 环境坑（云端容器）
 - 网络只放行少数域名：`raw.githubusercontent.com`、`registry.npmjs.org`、`pypi.org` 可用；
-  CoinGecko/Binance/Yahoo/FRED/Google Fonts 都被 403。
+  CoinGecko/Binance API/Yahoo/FRED/Google Fonts 都被 403。
 - 价格数据：`https://raw.githubusercontent.com/coinmetrics/data/master/csv/btc.csv`
   （列 `PriceUSD`，日频，有约半年延迟——必须告诉用户数据截止日）。
-- 中文/数字字体走 npm：`@expo-google-fonts/noto-serif-sc`、`noto-sans-sc`、`inter`（内含 TTF）。
-- `pip install skia-python` 后缺 `libEGL.so.1`：软链 Playwright 自带的
-  `/opt/pw-browsers/chromium-*/chrome-linux/libEGL.so` 到一个目录，加进 `LD_LIBRARY_PATH`。
+  **Coin Metrics 的 `sol.csv` 等很多币没有 `PriceUSD` 列**，只有估算市值。
+- **最新日线（到昨天）走 Binance 公开数据的 S3 桶**，可访问：
+  `https://s3-ap-northeast-1.amazonaws.com/data.binance.vision?prefix=data/spot/monthly/klines/ETHUSDT/1d/`
+  列出 zip，整月用 monthly、当月用 daily；2025 年起的文件时间戳是微秒。脚本见 `fetch_binance.py`。
+  和 Coin Metrics 拼接前先比重叠区（ETH 中位差 ≈0），拼在 Coin Metrics 最后一天之后。
+- 中文/数字字体走 npm：`@expo-google-fonts/noto-serif-sc`、`noto-sans-sc`、`inter`（内含 TTF）；
+  英文标题用 `@expo-google-fonts/playfair-display`（900Black/700Bold/Italic）。
+- `pip install skia-python` 后缺 `libEGL.so.1`。旧办法是软链 Playwright 自带的
+  `/opt/pw-browsers/chromium-*/chrome-linux*/libEGL.so`；**新版 Chromium（1243）的 libEGL 不再导出 egl 符号**，
+  会报 `undefined symbol: eglQueryString`。直接编一个桩库（skia 只链 3 个函数，CPU 光栅从不调用）：
+  `gcc -shared -fPIC -Wl,-soname,libEGL.so.1 -o libEGL.so.1 egl_stub.c`（源码在上面 src 里）。
 - 多进程用 fork；随机种子不要用 `hash()`（每进程不同），用 `zlib.crc32`。
 
 ## 3. 渲染架构要点
@@ -37,8 +50,11 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 - 光柱（红涨绿跌）在半分辨率 numpy 里按列算、高斯模糊后 kPlus 叠加；
   放大时柱子变宽会变成霓虹块——按“每天像素数”降亮度。
 - 时间映射：事件时刻为锚点，锚点间 smootherstep 混 25% 线性 → 自然“到事件减速”。
+  **整数关口（里程碑）也给显式时刻当锚点**，否则关口离下一事件只差几天时，标签只闪 1 秒就被让位。
 - 标签防重叠：按 x 排序逐个上移；HUD 区和右侧卡片区设“禁入区”淡出；
-  每个事件只保留最近 ~9 个历史标签；里程碑标签在下一事件出现时让位。
+  每个事件只保留最近 ~9 个历史标签；里程碑标签在下一事件出现时让位；
+  网格刻度数字碰到事件标签就隐藏（比特币版有“100,000”压“MicroStrategy”的问题）。
+- HUD 后面垫一层柔和暗色椭圆，曲线从年份/价格下面穿过时字仍清楚。
 - 卡片/标注/光环的寿命 = min(默认, 下一事件时刻 + 0.25s)，否则相邻事件叠成一团。
 - 暗角要画在 HUD 之前，否则压暗文字。
 
@@ -58,6 +74,7 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 全部 numpy/scipy 合成：铃音（多泛音指数衰减）、轰鸣（扫频正弦+低通噪声）、
 呼啸（扫频带通噪声）、火花（随机高频短音）、月/年滴答、底噪随行情冷暖变化；
 混响 = 指数衰减噪声卷积；母带归一到约 −16 LUFS，用前瞻峰值限制器（别用 tanh，会失真）。
+**发 YouTube 的按 −14 LUFS、真峰值 ≤ −1 dBTP**（预限幅 RMS −14.3 dB、限幅阈 0.84 即可）。
 用频谱图核对音效时刻与画面事件对齐。
 
 ## 6. 出片与交付
@@ -75,3 +92,15 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
    `SHAKE` / `BLACK_SWANS` / `BRACKETS`。
 3. 改 HUD 文案（标题、“收盘价格”）、片头片尾文案与倍数。
 4. 先出 10 张关键帧确认版面，再全片渲染。
+
+多资产版里这些都集中在 `cfg_<资产>.py`；事件用语义 `kind`（genesis/peak/high/rally/crash/crisis/bottom/info/tech）
+决定颜色、推镜、晃动和音效，`category` 只是卡片上显示的英文分类。
+
+## 8. 做英文版 / 发 YouTube 的额外点
+- **涨跌配色按西方习惯反过来：绿涨红跌**（中文版是红涨绿跌），光柱、曲线、HUD 数字、背景冷暖都要跟着换。
+- 英文标题比中文长：卡片标题、描述、章节标题都做自动缩字号（`fit_font`），标题尽量 ≤ 20 字符。
+- 章节名别和事件卡标题重名（如章节“Crypto Winter”和卡片“Crypto Winter”同时出现）。
+- 封面 1280×720：大号币名 + 一句钩子（“11 YEARS IN 3 MINUTES”）+ 图上 2 个锁定框（最大回撤、ATH），
+  标签别压到标题。
+- `youtube_meta.py` 用章节时刻自动生成 YouTube chapters（首个必须 0:00、每段 ≥10 秒）。
+- 2026 年这类训练数据之后的事件，用 WebSearch 查到 2 个以上来源再写，描述保守（只写可核对的数字）。

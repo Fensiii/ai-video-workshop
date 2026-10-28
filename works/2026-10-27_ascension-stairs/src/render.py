@@ -243,34 +243,31 @@ def draw_scene_masks(t):
     up = np.array([math.sin(lean), math.cos(lean)])
     side = np.array([up[1], -up[0]])          # 朝前的法向
     sh = hip + 108 * up
-    # 躯干：胯窄、胸宽、肩收
-    prof = [(0.0, 15, 14), (0.35, 13, 15), (0.7, 17, 20), (0.92, 16, 17), (1.0, 10, 11)]
-    front = [P(hip + up * 108 * f + side * wf) for f, wb, wf in prof]
-    back = [P(hip + up * 108 * f - side * wb) for f, wb, wf in prof]
-    df.polygon(front + back[::-1], fill=255)
-    neck = sh + up * 14 + side * 5
-    limb(sh, neck, 13)
-    head = neck + up * 18 + side * 6
+    # 火柴人：等粗线条 + 实心圆头
+    SW = 9
+    neck = sh + up * 12
+    limb(hip, neck, SW)
+    head = neck + up * 24 + side * 3
     hc = P(head)
-    hr = 18 * z * S
-    df.ellipse([hc[0] - hr, hc[1] - hr * 1.08, hc[0] + hr, hc[1] + hr * 1.08], fill=255)
+    hr = 22 * z * S
+    df.ellipse([hc[0] - hr, hc[1] - hr, hc[0] + hr, hc[1] + hr], fill=255)
 
     for toe, ankle in feet:
         knee = ik(hip, ankle, THIGH, SHIN)
-        limb(hip, knee, 25)
-        limb(knee, ankle, 17)
-        limb(ankle - (toe - ankle) * 0.25, toe, 11)
+        limb(hip, knee, SW)
+        limb(knee, ankle, SW)
+        limb(ankle, ankle + (toe - ankle) * 0.6, SW)
     # 手臂与对侧腿同向摆动
     for i in (0, 1):
         rel = (feet[1 - i][1][0] - hip[0]) / D
         sw = 0.42 * max(-1.2, min(1.2, rel))
         a1 = -math.pi / 2 + lean * 0.5 + sw
-        sho = sh - up * 6
+        sho = sh
         elbow = sho + 50 * np.array([math.cos(a1), math.sin(a1)])
         a2 = a1 + 0.3 + 0.55 * max(0.0, sw)
         hand = elbow + 46 * np.array([math.cos(a2), math.sin(a2)])
-        limb(sho, elbow, 14)
-        limb(elbow, hand, 11)
+        limb(sho, elbow, SW)
+        limb(elbow, hand, SW)
 
     def down(im, blur=0):
         im = im.resize((W, H), Image.LANCZOS)

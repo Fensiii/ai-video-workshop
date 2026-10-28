@@ -1,6 +1,6 @@
 # 登神长阶（5 秒）
 
-侧面视角：一个剪影人（无披风）缓步登上悬空长阶。前 2 秒暴雨雷电（三道闪电照亮乌云和人物轮廓），
+侧面视角：一个火柴人（等粗线条 + 实心圆头）缓步登上悬空长阶。前 2 秒暴雨雷电（三道闪电照亮乌云和人物轮廓），
 2–4 秒雨停、乌云被撕开、台阶尽头的神光透出，4–5 秒完全放晴、神光爆发、画面泛白。
 镜头紧跟人物（人物占画面高度约一半），并缓慢拉远。1920×1080 30fps，5.0 秒。
 
@@ -11,4 +11,4 @@
 - `src/render.py OUT_DIR [t...]`：逐帧渲染（PIL + numpy，剪影 2× 超采样，4 进程约 4 分钟）；给时间点只出静帧
   - 天气时间轴在 `weather()`，闪电时刻在 `STRIKES`
 - `src/audio.py out.wav`：合成音效（`STRIKES` 与画面同步）
-- 编码：`ffmpeg -framerate 30 -i f%04d.png -i sfx.wav -c:v libx264 -crf 18 -pix_fmt yuv420p -c:a aac -af loudnorm=I=-16:TP=-1.5`，之后音量再 +2.3dB
+- 编码：`ffmpeg -framerate 30 -i f%04d.png -i sfx.wav -c:v libx264 -crf 18 -pix_fmt yuv420p -c:a aac -af loudnorm=I=-16:TP=-1.5,volume=2.3dB`

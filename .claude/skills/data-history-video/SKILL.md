@@ -6,6 +6,8 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 # 数据历史走势视频：经验与流程
 
 参考实现：`works/2026-10-17_bitcoin-2010-2026/src/`（比特币版，可直接改数据和事件复用）
+英文版 + 原创配乐：`works/2026-10-28_bitcoin-2010-2026-en/src/`（同一套画面代码的英文化，多了 `score.py`/`music.py` 作曲、
+`mix.py` 按 YouTube −14 LUFS 母带、`thumbnail.py` 封面；做别的语言或要配乐时从这一版起步）
 - `btc_common.py`：数据加载、事件表、章节、时间映射、镜头预计算
 - `render.py`：skia 逐帧渲染（背景/图表/特效/HUD/片头片尾/镜头 FX）
 - `audio.py`：纯合成音效轨（无配音、无音乐素材）

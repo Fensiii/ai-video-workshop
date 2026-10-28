@@ -1,0 +1,9 @@
+# re-creatable working files (fonts come from npm @expo-google-fonts/*, see README)
+data/btc_cm_full.csv
+fonts/
+work/
+out/
+src/nebula.npz
+src/test_frames/
+src/__pycache__/
+samples/

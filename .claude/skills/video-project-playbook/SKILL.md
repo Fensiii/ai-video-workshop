@@ -1,6 +1,6 @@
 ---
 name: video-project-playbook
-description: 本仓库历次视频项目的经验总结与可复用代码索引（特斯拉进化 2D 动画、特斯拉进化科普配音版、特斯拉凭什么无配音版、歌曲混剪 MV 加歌词、比特币历史走势复刻）。用户要做新视频、复刻参考视频、做科普/解说/动画/歌词 MV、问“上次怎么做的”时先读这里，再决定复用哪套代码。
+description: 本仓库历次视频项目的经验总结与可复用代码索引（特斯拉进化 2D 动画、特斯拉进化科普配音版、特斯拉凭什么无配音版、歌曲混剪 MV 加歌词、比特币历史走势复刻及其英文版+原创配乐+YouTube 发布包）。用户要做新视频、复刻参考视频、翻译成英文、配乐、准备发 YouTube、做科普/解说/动画/歌词 MV、问“上次怎么做的”时先读这里，再决定复用哪套代码。
 ---
 
 # 视频项目经验手册（ai-video-workshop）
@@ -15,6 +15,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 特斯拉，凭什么？（无配音） | `tesla-evolution-explainer` / `tesla-success/` | 2分38秒、字幕 + 合成配乐 | Canvas/DOM + Playwright + numpy 配乐 |
 | 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
+| 比特币英文版（YouTube） | `works/2026-10-28_bitcoin-2010-2026-en/` | 同片英文字幕化 + 原创管弦配乐 + 发布包 | skia + HarfBuzz、采样器作曲（VSCO/Salamander） |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。
@@ -57,6 +58,11 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 - GitHub 单文件上限 100MB：加镜头晃动等高细节画面后 crf19 会超；用两遍编码 `-b:v 3500k`
   （约 3 分钟 ≈ 90MB）。
 - 长任务（全片渲染 10+ 分钟）放后台，用 `until grep ... ; do sleep 10; done` 等完成，不要轮询刷屏。
+- **skia-python 144** 链接的 EGL 符号 Chromium 的 libEGL 已不导出：用 `works/2026-10-28_bitcoin-2010-2026-en/src/egl_stub.c`
+  编一个空桩 `libEGL.so.1` 放进 `LD_LIBRARY_PATH`（CPU 渲染根本不调用 EGL）。
+- `git clone` 公开 GitHub 仓库可以用（走代理）；`raw.githubusercontent.com` 能直接下单个文件。
+  blobless 克隆后别跑 `git ls-tree -l`（要大小会逐个拉 blob，卡死），只用 `--name-only` 列目录。
+  huggingface、archive.org、freepd、pixabay 都不通，免费音乐素材下不了 → 配乐自己写。
 
 ## 三、三种渲染路线怎么选
 
@@ -106,6 +112,23 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 详见 `data-history-video`。要点：数据从 Coin Metrics GitHub CSV 取（有半年延迟）；
 到事件时减速；暴跌/黑天鹅镜头冲击晃动（7–16Hz），震荡行情手持晃动；
 重要节点推近放大 + 锁定框、价格日期标签、ATH 虚线、涨跌测量箭头；音效全合成。
+
+### 6. 比特币英文版 + 原创配乐 + YouTube 发布
+- **翻译**：所有画面文字集中在 `btc_common.py`（事件、年代）和 `render.py`（HUD、片头片尾）。分类中文键留作逻辑，
+  另设 `CAT_EN` 显示。英文比中文长：卡片标题用 `fit_size` 自动缩字号，描述 `wrap` 自动折行（两行时均衡断行防孤字），
+  先跑一遍版面审计（打印缩到多小、折成几行）再出图。日期写成 `Nov 18, 2011`。
+- **拉丁字要字距**：skia `drawString` 不做 kerning，用 uharfbuzz 排版 + `TextBlobBuilder.allocRunPos`；
+  `TextBlob.MakeFromShapedText` 的原点在左上角，别直接当基线用。
+- **配乐 = 采样器作曲**（`score.py` 写和弦/能量曲线/主题，`music.py` 渲染）：120 BPM 让所有事件落在拍上；
+  能量曲线跟行情，暴跌那一刻乐队断掉；主题在几次顶点由大提琴+圆号+小提琴奏出；结尾转大调。
+  采样：VSCO 2 CE（CC0，弦乐/圆号/竖琴/打击乐）+ Salamander 钢琴（CC BY 3.0，需署名）。
+  坑：VSCO 文件名比实际低一个八度（+12）；圆号 v3/v4 只到 C4、小提琴最高样本 D6 → 旋律别写出采样范围，
+  否则大幅移调像花栗鼠；弱奏弦乐起音慢（30% 音量要 0.3 s），旋律音要提前起+跳过开头；
+  看不到也听不到 → 用分声部 RMS 表、响度曲线对能量曲线、八度频谱、事件处低频起音时刻来客观检查。
+- **音效配合音乐**：去掉原来的 drone 底噪；铃声吸附到当时和弦内音；不规则的月份滴答量化到 16 分音符。
+- **YouTube 规格**：−14 LUFS、真峰值 ≤ −1 dBTP；上传用码率高的 master（复制 CRF15 渲染流 + AAC 384k），
+  仓库存 ≤100MB 两遍编码版；发布包 `youtube.md`：标题、描述（章节时间戳要从 0:00 开始、每段 ≥10 秒）、标签、
+  中文翻译、上传选项（非儿童、修改/合成内容选否、类别 Education）；封面用渲染器直接出 1280×720。
 
 ## 五、用户偏好（已确认过的）
 

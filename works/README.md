@@ -6,6 +6,7 @@
 | 目录 | 成片 | 时长 | 规格 | 说明 |
 |---|---|---|---|---|
 | `2026-10-17_bitcoin-2010-2026/` | `bitcoin_2010-2026_16x9.mp4` | 3:14 | 1920×1080 30fps | 比特币 2010–2026 走势，一比一复刻 `references/data-history/nasdaq-55y.mp4`；只有合成音效；含镜头晃动、推近和图上标注。生成脚本在 `src/`，经验见 skill `data-history-video` |
+| `2026-10-28_bitcoin-2010-2026-en/` | `bitcoin_2010-2026_en_16x9.mp4` | 3:14 | 1920×1080 30fps | 上面比特币视频的**英文版**，准备发 YouTube：画面文字全部英文；新加原创配乐（D 小调管弦 + 少量合成器，跟着涨跌起伏），音效压低保留；−14 LUFS。`youtube.md` 是发布包（标题/描述/章节/标签/上传设置），`youtube_thumbnail.jpg` 是封面；配乐管线见 `src/score.py`、`src/music.py` |
 | `2026-10-17_song-mv-duanfa/` | `duanfa-girl-mv_16x9.mp4` | 1:10 | 1920×1080 | 《幻昼》×《短发女孩》×《take me hand》混剪，带歌词字幕；`lyrics.ass` / `lyrics.lrc` 为歌词时间轴 |
 
 ## 不在库里的旧作品

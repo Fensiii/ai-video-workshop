@@ -11,7 +11,7 @@ FPS, DUR = 30, 5.0
 SS = 2                      # 剪影超采样倍数
 D, SH = 50.0, 40.0          # 台阶进深 / 高度（世界单位）
 RATE = 1.6                  # 每秒登几级
-THIGH, SHIN = 72.0, 70.0
+THIGH, SHIN = 58.0, 56.0
 LEG = THIGH + SHIN
 ANCHOR = np.array([0.38 * W, 0.68 * H])   # 人物胯部固定在屏幕的位置
 
@@ -46,7 +46,7 @@ def stair_y(x):           # 台阶踏面中心连线（世界坐标，y 向上�
 def smooth(x):
     return ease(x)
 
-FOOT = 24.0   # 脚长（脚跟到脚尖）
+FOOT = 20.0   # 脚长（脚跟到脚尖）
 
 def pose(t):
     """返回胯部、两只脚（脚尖位置 + 脚掌角度）、步相 u。
@@ -78,7 +78,7 @@ def pose(t):
 
 def camera(t):
     hip, _, _ = pose(t)
-    z = 2.05 - 0.45 * ease(t / DUR)
+    z = 2.3 - 0.5 * ease(t / DUR)
     return hip, z
 
 def w2s(p, cam, z):
@@ -239,15 +239,15 @@ def draw_scene_masks(t):
         for q in (A, B):
             df.ellipse([q[0] - rr, q[1] - rr, q[0] + rr, q[1] + rr], fill=255)
 
-    lean = math.radians(12 + 3 * math.sin(2 * math.pi * u + 0.6))
+    lean = math.radians(4 + 2 * math.sin(2 * math.pi * u + 0.6))
     up = np.array([math.sin(lean), math.cos(lean)])
     side = np.array([up[1], -up[0]])          # 朝前的法向
-    sh = hip + 108 * up
+    sh = hip + 80 * up
     # 火柴人：等粗线条 + 实心圆头
     SW = 9
-    neck = sh + up * 12
+    neck = sh + up * 8
     limb(hip, neck, SW)
-    head = neck + up * 24 + side * 3
+    head = neck + up * 22
     hc = P(head)
     hr = 22 * z * S
     df.ellipse([hc[0] - hr, hc[1] - hr, hc[0] + hr, hc[1] + hr], fill=255)
@@ -263,9 +263,9 @@ def draw_scene_masks(t):
         sw = 0.42 * max(-1.2, min(1.2, rel))
         a1 = -math.pi / 2 + lean * 0.5 + sw
         sho = sh
-        elbow = sho + 50 * np.array([math.cos(a1), math.sin(a1)])
+        elbow = sho + 40 * np.array([math.cos(a1), math.sin(a1)])
         a2 = a1 + 0.3 + 0.55 * max(0.0, sw)
-        hand = elbow + 46 * np.array([math.cos(a2), math.sin(a2)])
+        hand = elbow + 38 * np.array([math.cos(a2), math.sin(a2)])
         limb(sho, elbow, SW)
         limb(elbow, hand, SW)
 

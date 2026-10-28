@@ -1,6 +1,6 @@
 """程序合成音效：低频嗡鸣 + 每级脚步 + 上升的圣光和声 + 结尾升腾。输出 48k 立体声 wav。"""
 import sys, numpy as np, wave
-SR, DUR, RATE = 48000, 3.0, 2.6
+SR, DUR, RATE = 48000, 3.0, 1.6
 t = np.arange(int(SR * DUR)) / SR
 rng = np.random.default_rng(1)
 out = np.zeros_like(t)

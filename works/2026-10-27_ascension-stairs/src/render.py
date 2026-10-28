@@ -10,7 +10,7 @@ W, H = 1920, 1080
 FPS, DUR = 30, 3.0
 SS = 2                      # 剪影超采样倍数
 D, SH = 50.0, 40.0          # 台阶进深 / 高度（世界单位）
-RATE = 2.6                  # 每秒登几级
+RATE = 1.6                  # 每秒登几级
 THIGH, SHIN = 72.0, 70.0
 LEG = THIGH + SHIN
 ANCHOR = np.array([0.36 * W, 0.66 * H])   # 人物胯部固定在屏幕的位置
@@ -43,29 +43,38 @@ YY, XX = np.mgrid[0:H, 0:W].astype(np.float64)
 def stair_y(x):           # 台阶踏面中心连线（世界坐标，y 向上）
     return SH * (x / D + 0.5)
 
+def smooth(x):
+    return ease(x)
+
+FOOT = 24.0   # 脚长（脚跟到脚尖）
+
 def pose(t):
+    """返回胯部、两只脚（脚尖位置 + 脚掌角度）、步相 u。
+    每只脚一次跨两级：先蹬地抬脚跟，再抬腿过台阶边、前送、落地。"""
     u = t * RATE
-    hx = (u + 1) * D
-    bob = 3.0 * math.cos(2 * math.pi * u)
-    hy = stair_y(hx) + 0.8 * LEG + bob
-    feet, phases = [], []
+    hx = (u + 1) * D + 3.0 * math.sin(2 * math.pi * u)
+    hy = stair_y(hx) + 0.88 * LEG - 5.0 * math.cos(2 * math.pi * u)
+    feet = []
     for off in (0.0, 1.0):
         v = (u - off) / 2
         n = math.floor(v)
         p = v - n
         s0 = 2 * n + off
-        if p < 0.5:
-            s = ease(p * 2)
-            k = s0 + 2 * s
-            fx = (k + 0.5) * D
-            fy = (k + 1) * SH + 38 * math.sin(math.pi * s)
-            phases.append(s)
-        else:
+        if p < 0.5:                       # 摆动
+            s = p * 2
+            x0, y0 = (s0 + 0.5) * D + 11, (s0 + 1) * SH
+            tx = x0 + 2 * D * smooth(s)
+            ty = y0 + 2 * SH * smooth(s / 0.55) + 20 * math.sin(math.pi * s)
+            a = -0.6 * (1 - smooth(s / 0.35)) + 0.25 * math.sin(math.pi * smooth((s - 0.3) / 0.7))
+        else:                             # 支撑，末段抬脚跟
             k = s0 + 2
-            fx, fy = (k + 0.5) * D, (k + 1) * SH
-            phases.append(None)
-        feet.append(np.array([fx, fy]))
+            tx, ty = (k + 0.5) * D + 11, (k + 1) * SH
+            a = -0.6 * smooth((p - 0.8) / 0.2)
+        toe = np.array([tx, ty])
+        ankle = toe - FOOT * np.array([math.cos(a), math.sin(a)]) + np.array([0, 8 * math.cos(a)])
+        feet.append((toe, ankle))
     return np.array([hx, hy]), feet, u
+
 
 def camera(t):
     hip, _, _ = pose(t)
@@ -163,41 +172,38 @@ def draw_scene_masks(t):
         for q in (A, B):
             df.ellipse([q[0] - rr, q[1] - rr, q[0] + rr, q[1] + rr], fill=255)
 
-    lean = math.radians(14)
-    sh = hip + 112 * np.array([math.sin(lean), math.cos(lean)])
-    head = sh + np.array([10, 34])
-    # 披风（身后飘动）
-    up, lo = [], []
-    N = 14
-    for i in range(N + 1):
-        s = i / N
-        wave = 14 * math.sin(2 * math.pi * (s * 1.4 - t * 1.6)) * s
-        base = sh + np.array([-8, -2]) + np.array([-s * 190, -s * 120]) + np.array([0, wave])
-        nrm = np.array([0.53, -0.85])
-        wdt = 6 + 42 * s ** 0.8
-        up.append(P(base - nrm * wdt * 0.2))
-        lo.append(P(base + nrm * wdt))
-    df.polygon(up + lo[::-1], fill=255)
-
-    phase = 2 * math.pi * u / 2
-    for side, foot in enumerate(feet):
-        knee = ik(hip, foot, THIGH, SHIN)
-        limb(hip, knee, 27)
-        limb(knee, foot, 20)
-        limb(foot, foot + np.array([22, -2]), 12)
-    for side in (0, 1):
-        sw = 0.55 * math.sin(phase + side * math.pi)
-        a1 = -math.pi / 2 + sw
-        elbow = sh + 52 * np.array([math.cos(a1), math.sin(a1)])
-        a2 = a1 + 0.35 + 0.25 * max(0, sw)
-        hand = elbow + 48 * np.array([math.cos(a2), math.sin(a2)])
-        limb(sh, elbow, 15)
-        limb(elbow, hand, 12)
-    limb(hip, sh, 40)
-    limb(sh, sh + np.array([6, 18]), 18)
+    lean = math.radians(12 + 3 * math.sin(2 * math.pi * u + 0.6))
+    up = np.array([math.sin(lean), math.cos(lean)])
+    side = np.array([up[1], -up[0]])          # 朝前的法向
+    sh = hip + 108 * up
+    # 躯干：胯窄、胸宽、肩收
+    prof = [(0.0, 15, 14), (0.35, 13, 15), (0.7, 17, 20), (0.92, 16, 17), (1.0, 10, 11)]
+    front = [P(hip + up * 108 * f + side * wf) for f, wb, wf in prof]
+    back = [P(hip + up * 108 * f - side * wb) for f, wb, wf in prof]
+    df.polygon(front + back[::-1], fill=255)
+    neck = sh + up * 14 + side * 5
+    limb(sh, neck, 13)
+    head = neck + up * 18 + side * 6
     hc = P(head)
-    hr = 21 * z * S
-    df.ellipse([hc[0] - hr, hc[1] - hr, hc[0] + hr, hc[1] + hr], fill=255)
+    hr = 18 * z * S
+    df.ellipse([hc[0] - hr, hc[1] - hr * 1.08, hc[0] + hr, hc[1] + hr * 1.08], fill=255)
+
+    for toe, ankle in feet:
+        knee = ik(hip, ankle, THIGH, SHIN)
+        limb(hip, knee, 25)
+        limb(knee, ankle, 17)
+        limb(ankle - (toe - ankle) * 0.25, toe, 11)
+    # 手臂与对侧腿同向摆动
+    for i in (0, 1):
+        rel = (feet[1 - i][1][0] - hip[0]) / D
+        sw = 0.42 * max(-1.2, min(1.2, rel))
+        a1 = -math.pi / 2 + lean * 0.5 + sw
+        sho = sh - up * 6
+        elbow = sho + 50 * np.array([math.cos(a1), math.sin(a1)])
+        a2 = a1 + 0.3 + 0.55 * max(0.0, sw)
+        hand = elbow + 46 * np.array([math.cos(a2), math.sin(a2)])
+        limb(sho, elbow, 14)
+        limb(elbow, hand, 11)
 
     def down(im, blur=0):
         im = im.resize((W, H), Image.LANCZOS)

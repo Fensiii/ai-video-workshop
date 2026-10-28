@@ -36,7 +36,7 @@ def main(old_fn, new_fn):
     rows = sorted(old.items()) + sorted((d, c) for d, c in new.items() if d > cut)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w', newline='') as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator='\n')
         w.writerow(['date', 'close'])
         for d, c in rows:
             w.writerow([d.isoformat(), f'{c:.6f}'.rstrip('0').rstrip('.')])

@@ -84,7 +84,7 @@ def main():
     rows = [(d, c) for d, c in rows if d >= dt.date(1999, 1, 22)]
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w', newline='') as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator='\n')
         w.writerow(['date', 'close'])
         for d, c in rows:
             w.writerow([d.isoformat(), f'{c:.6f}'])

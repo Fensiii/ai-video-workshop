@@ -1,6 +1,6 @@
 """Mux and encode the deliverables after run_render.py and audio.py.
 
-  out/sfx_norm.wav                 sound effects at -14 LUFS / -1 dBTP (YouTube reference loudness)
+  out/sfx_norm.wav                 sound effects at -14 LUFS / -1.5 dBTP (YouTube reference loudness)
   out/nvidia_1999-2026_16x9.mp4    two-pass H.264, sized to stay under GitHub's 100 MB limit
   out/thumbs.jpg                   12 evenly spaced frames, tile=4x3
 
@@ -29,7 +29,7 @@ def run(cmd, **kw):
 
 
 def loudnorm():
-    flt = 'loudnorm=I=-14:TP=-1.0:LRA=11'
+    flt = 'loudnorm=I=-14:TP=-1.5:LRA=11'
     p = run(['ffmpeg', '-hide_banner', '-nostats', '-i', SFX, '-af', flt + ':print_format=json', '-f', 'null', '-'],
             capture_output=True, text=True)
     js = json.loads(p.stderr[p.stderr.rindex('{'):p.stderr.rindex('}') + 1])

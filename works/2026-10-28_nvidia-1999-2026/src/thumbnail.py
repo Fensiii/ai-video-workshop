@@ -38,8 +38,8 @@ def main(out):
     cam = poster_cam(250, 1010, 1730, 330, 14.0)
     R.draw_grid(c, cam, 0.0, alpha=0.55, labels=False)
     R.draw_curtains(c, cam, 0.0, intensity=0.95)
-    R.draw_line(c, cam, 0.0, style=1.25)
-    R.draw_head(c, cam, 0.0, 0.6, scale=1.5)
+    R.draw_line(c, cam, 0.0, style=0.95)
+    R.draw_head(c, cam, 0.0, 0.6, scale=1.2)
     R.draw_vignette(c)
     # title block
     f = R.font('serif_k', 210)
@@ -56,6 +56,12 @@ def main(out):
     R.draw_text(c, f'${p0:.2f}  →  ${p1:,.0f}', 92, 392, fp, R.P((248, 250, 255)), spacing=1)
     R.draw_text(c, f'{B.D0.year} — {B.DATES[-1].year}', 96, 470, R.font('semi', 44),
                 R.P((214, 196, 150)), spacing=10)
+    fm = R.font('serif', 132)
+    mult = f'{p1 / p0:,.0f}×'
+    R.draw_text(c, mult, 86, 650, fm, R.P((245, 196, 110), 0.45, blur=18), spacing=3)
+    shg = skia.GradientShader.MakeLinear([skia.Point(0, 555), skia.Point(0, 655)],
+                                         [R.col((252, 230, 175)), R.col((243, 198, 112))], [0, 1])
+    R.draw_text(c, mult, 86, 650, fm, skia.Paint(AntiAlias=True, Shader=shg), spacing=3)
     im = surf.makeImageSnapshot()
     small = skia.Surface(1280, 720)
     small.getCanvas().drawImageRect(im, skia.Rect(0, 0, 1280, 720),

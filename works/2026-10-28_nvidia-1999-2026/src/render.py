@@ -848,12 +848,13 @@ def draw_milestones(c, cam, t, alpha=1.0):
             fnum = font('light', 66)
             wnum = text_width(fnum, lab, 0.5)
             xr = x - 30
-            draw_text(c, lab, xr, y - 36 + rise, fnum, P((254, 238, 204), la), spacing=0.5, align='right')
-            draw_text(c, 'MARKET CAP', xr - wnum / 2, y - 114 + rise, font('bold', 17), P((228, 197, 150), la),
-                      spacing=6, align='center')
             note = MS_NOTES.get(lab)
+            yb = y - 36 - (26 if note else 0) + rise
+            draw_text(c, lab, xr, yb, fnum, P((254, 238, 204), la), spacing=0.5, align='right')
+            draw_text(c, 'MARKET CAP', xr - wnum / 2, yb - 78, font('bold', 17), P((228, 197, 150), la),
+                      spacing=6, align='center')
             if note:
-                draw_text(c, note, xr, y + 2 + rise, font('sans_m', 20), P((228, 197, 150), 0.9 * la),
+                draw_text(c, note, xr, yb + 32, font('sans_m', 20), P((228, 197, 150), 0.95 * la),
                           spacing=1.0, align='right')
 
 
@@ -1340,8 +1341,8 @@ PREV_STEP = 4
 PREV_IDX = np.arange(0, NDAYS, PREV_STEP)
 PREV_XS, PREV_YS = prev_xy(PREV_IDX)
 # glint spots: cycle peaks and troughs
-GLINT_DATES = ['2002-01-03', '2002-10-09', '2007-10-31', '2008-11-20', '2018-10-01', '2018-12-24',
-               '2021-11-29', '2022-10-13', '2025-01-27', '2026-05-14']
+GLINT_DATES = ['2002-01-03', '2002-10-09', '2007-10-17', '2008-11-20', '2018-10-01', '2018-12-24',
+               '2021-11-29', '2022-10-14', '2025-04-04', '2026-10-06']
 GLINT_DAYS = [B.day_of(s) for s in GLINT_DATES]
 TITLE_GRAD = [(232, 250, 196), (186, 226, 120), (128, 186, 52)]
 IPO_PRICE = 12.0
@@ -1477,16 +1478,14 @@ OV_LABELS = [  # (date, text, colour, above)
     ('1999-01-22', '1999 IPO', B.GOLD, True),
     ('2002-01-03', '2002 peak', B.GOLD, True),
     ('2002-10-09', '2002 crash', B.RED, False),
-    ('2007-10-31', '2007 peak', B.GOLD, True),
+    ('2007-10-17', '2007 peak', B.GOLD, True),
     ('2008-11-20', '2008 crisis', B.RED, False),
     ('2012-09-30', 'AlexNet', B.PURPLE, False),
     ('2018-10-01', '2018 crypto peak', B.GOLD, True),
     ('2018-12-24', 'crypto winter', B.RED, False),
     ('2021-11-29', '2021 peak', B.GOLD, True),
-    ('2022-10-13', '2022 bottom', B.RED, False),
-    ('2022-11-30', 'ChatGPT', B.PURPLE, False),
-    ('2025-01-27', 'DeepSeek', B.RED, False),
-    ('2026-05-14', '2026 high', B.GOLD, True),
+    ('2022-10-14', '2022 bottom', B.RED, False),
+    ('2026-10-06', '2026 high', B.GOLD, True),
 ]
 END_PRICE = PRICE[-1]
 END_MULT = PRICE[-1] / PRICE[0]
@@ -1513,9 +1512,9 @@ def draw_ending_text(c, t, cam):
             if blur > 0.3:
                 lp.setImageFilter(skia.ImageFilters.Blur(blur, blur))
             c.saveLayer(None, lp)
-            y = 400 + 78 * k
-            w_ = draw_text(c, s, 1250, y, f, P((255, 255, 255), 1.0), spacing=1.0)
-            draw_text(c, '?', 1250 + w_ + 4, y, f, P((200, 236, 140), 1.0))
+            y = 322 + 78 * k
+            w_ = draw_text(c, s, 1150, y, f, P((255, 255, 255), 1.0), spacing=1.0)
+            draw_text(c, '?', 1150 + w_ + 4, y, f, P((200, 236, 140), 1.0))
             c.restore()
     # overview labels
     t_lab = B.END_T1 - 0.6
@@ -1569,10 +1568,11 @@ def draw_ending_text(c, t, cam):
         if blur > 0.3:
             lp.setImageFilter(skia.ImageFilters.Blur(blur, blur))
         c.saveLayer(None, lp)
-        f = font('serif', 62)
-        line = 'From pixels to intelligence.'
-        draw_text(c, line, 1762, 888, f, P((235, 255, 210), 0.35, blur=12), spacing=1.5, align='right')
-        draw_text(c, line, 1762, 888, f, P((246, 244, 236), 1.0), spacing=1.5, align='right')
+        f = font('serif', 64)
+        for k, line in enumerate(('From pixels', 'to intelligence.')):
+            yy = 812 + 82 * k
+            draw_text(c, line, 1790, yy, f, P((235, 255, 210), 0.35, blur=12), spacing=1.5, align='right')
+            draw_text(c, line, 1790, yy, f, P((246, 244, 236), 1.0), spacing=1.5, align='right')
         c.restore()
     a5 = env(t, B.END_T1 + 3.6, 0.7, 999, 0)
     if a5 > 0:

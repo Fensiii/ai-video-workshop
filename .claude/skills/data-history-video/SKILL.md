@@ -1,6 +1,6 @@
 ---
 name: data-history-video
-description: 复刻/制作“资产历史走势”类数据动画视频（如纳斯达克 55 年、比特币 16 年）。当用户上传参考视频要求“一比一”换成另一个资产/指数，或要求做价格历史回顾动画、加镜头晃动/放大/标注、只要音效不要配音时使用。
+description: 复刻/制作“资产历史走势”类数据动画视频（如纳斯达克 55 年、比特币 16 年、英伟达 27 年英文版）。当用户上传参考视频要求“一比一”换成另一个资产/指数，或要求做价格历史回顾动画、加镜头晃动/放大/标注、只要音效不要配音时使用。
 ---
 
 # 数据历史走势视频：经验与流程
@@ -10,6 +10,11 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
 - `render.py`：skia 逐帧渲染（背景/图表/特效/HUD/片头片尾/镜头 FX）
 - `audio.py`：纯合成音效轨（无配音、无音乐素材）
 - `run_render.py`：多进程分段渲染 + ffmpeg 拼接
+
+股票 + 英文版（发 YouTube）：`works/2026-10-28_nvidia-1999-2026/src/`（英伟达，见第 8 节）
+- `nvda_common.py`：交易日 x 轴、事件数值由数据自动算、市值里程碑
+- `merge_data.py`：两份 GitHub 公开镜像拼接 + 重叠区逐日校验
+- `thumbnail.py`：YouTube 封面；`finalize.py`：−14 LUFS 响度、≤90MB 两遍编码、thumbs.jpg
 
 ## 1. 分析参考视频（先做，别凭印象）
 1. `ffprobe` 看时长/分辨率/音轨。抖音视频常是竖版长画布，16:9 内容在中间：
@@ -26,6 +31,11 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
   CoinGecko/Binance/Yahoo/FRED/Google Fonts 都被 403。
 - 价格数据：`https://raw.githubusercontent.com/coinmetrics/data/master/csv/btc.csv`
   （列 `PriceUSD`，日频，有约半年延迟——必须告诉用户数据截止日）。
+- 股票行情：Yahoo/Stooq/Nasdaq 都被拦截（WebFetch 走同一策略，也不通）。改用 GitHub 上的公开镜像：
+  先 `add_repo`（只读）再 `git clone --depth 1 --filter=blob:none --sparse`，用 `git show HEAD:<路径>` 取单个文件
+  （别跑 `git ls-tree -l`，它会逐个拉 blob 卡住）。英伟达用了 `debjit-mandal/NVIDIA-Stock-Analysis`
+  （1999–2024-06，`Close` 为仅拆股调整）+ `yennanliu/finance_data` 的 `data/prices/nvda.csv`（近 10 年，每天自动更新）。
+  拼接前在重叠区逐日比对；`Adj Close`/yfinance `auto_adjust` 还扣了分红，早年价格会偏低约 8%，别混用。
 - 中文/数字字体走 npm：`@expo-google-fonts/noto-serif-sc`、`noto-sans-sc`、`inter`（内含 TTF）。
 - `pip install skia-python` 后缺 `libEGL.so.1`：软链 Playwright 自带的
   `/opt/pw-browsers/chromium-*/chrome-linux/libEGL.so` 到一个目录，加进 `LD_LIBRARY_PATH`。
@@ -75,3 +85,20 @@ description: 复刻/制作“资产历史走势”类数据动画视频（如纳
    `SHAKE` / `BLACK_SWANS` / `BRACKETS`。
 3. 改 HUD 文案（标题、“收盘价格”）、片头片尾文案与倍数。
 4. 先出 10 张关键帧确认版面，再全片渲染。
+
+## 8. 股票版 / 英文版（英伟达 1999–2026 的经验）
+- **x 轴用交易日序号**：`day_of()` 用 bisect 找当天或之后的交易日，“较一年前”按 252 个交易日。
+- **事件数值不手填**：value 写 `'close'` / `'ret'`（单日涨跌）/ `('from', 日期)`，描述里用
+  `{close}`、`{pct@日期}`、`{mult@日期}` 占位，全部由数据算出；盘后发布的消息，事件日取次日交易日。
+- **先看数据再定事件**：列出最大单日涨跌、各周期高低点（英伟达 2004-08-06 −35.2% 史上最差一天就是这样找到的），
+  再用 WebSearch 查原因并交叉核对新闻里的收盘价。
+- **英文排版**：标题 Noto Serif ExtraBold（和中文 Noto Serif SC 同族），正文与数字 Inter；英文标题长，
+  用 `fit_font` 自动缩字号、`wrap_text` 自动折行（卡片文字宽 ≤457px），描述每行控制在约 40 个字符。
+  Noto Serif 没有 ▲▼→≈ 等符号，这些只用 Inter 画。
+- **欧美配色**：绿涨红跌（中文版是红涨绿跌），背景情绪色对调（大涨偏绿、暴跌偏红）。
+- **市值里程碑**（$1T…$5T）按报道日期放置，也作时间锚点；里程碑出现时，上一个事件的锁定框/价签用
+  `mark_life()` 提前退场，否则两组标注叠在一起。
+- **节奏上限**：每秒最多约 110 个交易日；平淡年份加一个“补位”事件（如 2011 年 Intel 付 15 亿和解）。
+- **YouTube**：响度 −14 LUFS / −1 dBTP（loudnorm 两遍 + `linear=true`）；章节时间戳第一章从 0:00 开始、
+  每章 ≥10 秒；封面 1280×720；标题/简介/章节/标签写进 `youtube.md` 一起交付。
+- 数据没到之前可以用 `NVDA_CSV=假数据.csv` 跑通版式，但假数据绝不进成片、也不给用户看数值。

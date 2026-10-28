@@ -7,6 +7,8 @@
 |---|---|---|---|---|
 | `2026-10-17_bitcoin-2010-2026/` | `bitcoin_2010-2026_16x9.mp4` | 3:14 | 1920×1080 30fps | 比特币 2010–2026 走势，一比一复刻 `references/data-history/nasdaq-55y.mp4`；只有合成音效；含镜头晃动、推近和图上标注。生成脚本在 `src/`，经验见 skill `data-history-video` |
 | `2026-10-17_song-mv-duanfa/` | `duanfa-girl-mv_16x9.mp4` | 1:10 | 1920×1080 | 《幻昼》×《短发女孩》×《take me hand》混剪，带歌词字幕；`lyrics.ass` / `lyrics.lrc` 为歌词时间轴 |
+| `2026-10-28_ethereum-2015-2026/` | `ethereum_2015-2026_16x9.mp4` | 3:09 | 1920×1080 30fps | 以太坊 2015.08–2026.10 走势，**英文版发 YouTube**，照比特币版风格；绿涨红跌、只有合成音效（−14 LUFS）。`cover.jpg` 为 YouTube 封面，`youtube.md` 为标题/简介/章节/标签。生成脚本在 `src/`（与 Solana 共用，`ASSET=eth`） |
+| `2026-10-28_solana-2020-2026/` | `solana_2020-2026_16x9.mp4` | 2:30 | 1920×1080 30fps | Solana 2020.04–2026.10 走势，英文版发 YouTube，同上；`src/` 与以太坊相同（`ASSET=sol`） |
 
 ## 不在库里的旧作品
 

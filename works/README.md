@@ -7,7 +7,7 @@
 |---|---|---|---|---|
 | `2026-10-17_bitcoin-2010-2026/` | `bitcoin_2010-2026_16x9.mp4` | 3:14 | 1920×1080 30fps | 比特币 2010–2026 走势，一比一复刻 `references/data-history/nasdaq-55y.mp4`；只有合成音效；含镜头晃动、推近和图上标注。生成脚本在 `src/`，经验见 skill `data-history-video` |
 | `2026-10-17_song-mv-duanfa/` | `duanfa-girl-mv_16x9.mp4` | 1:10 | 1920×1080 | 《幻昼》×《短发女孩》×《take me hand》混剪，带歌词字幕；`lyrics.ass` / `lyrics.lrc` 为歌词时间轴 |
-| `2026-10-27_ascension-stairs/` | `ascension-stairs_16x9.mp4` | 0:03 | 1920×1080 30fps | 登神长阶：侧面剪影缓步登悬空长阶走向神光（无披风，改版自然步态），镜头拉远、结尾神光爆发；程序合成音效，脚本在 `src/` |
+| `2026-10-27_ascension-stairs/` | `ascension-stairs_16x9.mp4` | 0:05 | 1920×1080 30fps | 登神长阶：侧面剪影缓步登悬空长阶；暴雨雷电 → 云开天晴 → 神光爆发；人物近景、自然步态；程序合成音效，脚本在 `src/` |
 
 ## 不在库里的旧作品
 

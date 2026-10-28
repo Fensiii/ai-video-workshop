@@ -1,4 +1,4 @@
-"""登神长阶：侧面剪影登阶，3 秒 1920x1080 30fps。
+"""登神长阶：侧面剪影登阶，暴雨雷电 → 云开天晴，5 秒 1920x1080 30fps。
 用法: python render.py OUT_DIR [t1 t2 ...]   (给 t 只渲染这些时刻的静帧)
 """
 import sys, os, math
@@ -7,13 +7,13 @@ from PIL import Image, ImageDraw, ImageFilter
 from multiprocessing import Pool
 
 W, H = 1920, 1080
-FPS, DUR = 30, 3.0
+FPS, DUR = 30, 5.0
 SS = 2                      # 剪影超采样倍数
 D, SH = 50.0, 40.0          # 台阶进深 / 高度（世界单位）
 RATE = 1.6                  # 每秒登几级
 THIGH, SHIN = 72.0, 70.0
 LEG = THIGH + SHIN
-ANCHOR = np.array([0.36 * W, 0.66 * H])   # 人物胯部固定在屏幕的位置
+ANCHOR = np.array([0.38 * W, 0.68 * H])   # 人物胯部固定在屏幕的位置
 
 rng = np.random.default_rng(7)
 
@@ -78,7 +78,7 @@ def pose(t):
 
 def camera(t):
     hip, _, _ = pose(t)
-    z = 1.32 - 0.5 * ease(t / DUR)
+    z = 2.05 - 0.45 * ease(t / DUR)
     return hip, z
 
 def w2s(p, cam, z):
@@ -97,6 +97,73 @@ def ik(hip, foot, a, b):
     th = math.atan2(d[1], d[0])
     al = math.acos(max(-1, min(1, (a * a + L * L - b * b) / (2 * a * L))))
     return hip + a * np.array([math.cos(th + al), math.sin(th + al)])
+
+# ---------- 天气 ----------
+STRIKES = [(0.45, 1.0, 0.62), (1.30, 0.85, 0.20), (1.95, 0.5, 0.80)]   # 时刻、强度、横向位置
+
+def weather(t):
+    storm = 1 - ease((t - 2.0) / 2.0)          # 1=暴雨，0=晴
+    rain = 1 - ease((t - 1.8) / 1.6)
+    flash = 0.0
+    for t0, amp, _ in STRIKES:
+        d = t - t0
+        if d >= 0:
+            flash += amp * (math.exp(-d / 0.06) + (0.7 * math.exp(-(d - 0.12) / 0.05) if d > 0.12 else 0))
+    return storm, rain, min(flash, 1.3)
+
+def bolt_mask(t):
+    m = Image.new("L", (W, H), 0)
+    dm = ImageDraw.Draw(m)
+    any_ = False
+    for i, (t0, amp, xf) in enumerate(STRIKES):
+        d = t - t0
+        if not (0 <= d < 0.2) or (0.07 < d < 0.12):
+            continue
+        any_ = True
+        br = np.random.default_rng(100 + i)
+        def branch(x, y, ang, length, w, depth):
+            pts = [(x, y)]
+            while length > 0:
+                seg = 25 + 30 * br.random()
+                ang2 = ang + br.normal(0, 0.45)
+                x, y = x + seg * math.sin(ang2), y + seg * math.cos(ang2)
+                pts.append((x, y)); length -= seg
+                if depth < 2 and br.random() < 0.12:
+                    branch(x, y, ang + br.choice([-0.7, 0.7]), length * 0.45, max(1, w - 2), depth + 1)
+            dm.line(pts, fill=int(255 * min(1, amp)), width=w)
+        branch(xf * W, -20, br.normal(0, 0.15), H * 0.62, 5, 0)
+    if not any_:
+        return None
+    a = np.asarray(m, np.float64) / 255
+    g = np.asarray(m.filter(ImageFilter.GaussianBlur(14)), np.float64) / 255
+    return a, g
+
+def rain_mask(t, rain, flash):
+    m = Image.new("L", (W, H), 0)
+    if rain <= 0.01:
+        return None
+    dm = ImageDraw.Draw(m)
+    rr = np.random.default_rng(int(t * FPS) + 9)
+    n = int(1100 * rain)
+    xs, ys = rr.random(n) * (W + 300), rr.random(n) * H
+    ln = 40 + 70 * rr.random(n)
+    vv = 60 + 140 * rr.random(n)
+    for x, y, l, v in zip(xs, ys, ln, vv):
+        dm.line([(x, y), (x - 0.22 * l, y + l)], fill=int(v), width=2 if v > 150 else 1)
+    return np.asarray(m.filter(ImageFilter.GaussianBlur(0.7)), np.float64) / 255
+
+def storm_sky(t, storm, flash, r):
+    # 压顶乌云：阈值随放晴升高，云层被撕开
+    ox = int(t * 60) % W
+    n = CLOUD2[:, ox:ox + W] * 0.6 + CLOUD[:, (ox * 2) % W:(ox * 2) % W + W] * 0.4
+    thr = 0.12 + 0.8 * (1 - storm) ** 1.5
+    dens = np.clip((n - thr) * 4.0, 0, 1)
+    shade = np.clip(1.25 - 1.6 * (n - 0.35), 0.35, 1.3)
+    c = np.array([34, 38, 50.0]) / 255 * shade[..., None]
+    c = c + np.array([0.55, 0.6, 0.75]) * flash * 0.5 * n[..., None]
+    sun = np.clip(1 - r / 0.6, 0, 1) ** 2 * (1 - storm)
+    c = c + np.array([1.0, 0.7, 0.35]) * (sun * np.clip(1 - dens * 1.5 + 0.5, 0, 1))[..., None] * 0.6
+    return c, dens
 
 # ---------- 背景 ----------
 def background(t, flare):
@@ -213,20 +280,37 @@ def draw_scene_masks(t):
     return down(stairs), down(edges), down(fig), cam, z
 
 def render(t):
-    flare = ease((t - 2.2) / 0.8)
+    storm, rain, flash = weather(t)
+    sunny = 1 - storm
+    flare = ease((t - 4.0) / 1.0)
     bg, r = background(t, flare)
+    # 雨天底色：灰蓝压暗，太阳只透一点
+    grey = np.array([62, 68, 82.0]) / 255 - np.array([36, 38, 44.0]) / 255 * (YY / H)[..., None]
+    k = sunny ** 1.3
+    bg = grey * (1 - k) + bg * k
+    bg = bg + np.array([0.5, 0.55, 0.7]) * flash * 0.35
     stairs, edges, fig, cam, z = draw_scene_masks(t)
     ccol, cacc = clouds(t, cam, z, r)
-    img = bg * (1 - cacc[..., None]) + ccol
+    tint = np.array([0.45, 0.5, 0.6]) * (1 - k) + k
+    img = bg * (1 - cacc[..., None]) + ccol * tint
+    scol, sden = storm_sky(t, storm, flash, r)
+    bm = bolt_mask(t)
+    if bm is not None:   # 闪电在乌云之后半透出、之下全亮
+        img = img + np.array([0.8, 0.85, 1.0]) * (bm[1] * 0.8)[..., None]
+    img = img * (1 - sden[..., None]) + scol * sden[..., None]
+    if bm is not None:
+        img = img + np.array([0.9, 0.93, 1.0]) * (bm[0] * (1 - 0.5 * sden) + bm[1] * 0.5)[..., None]
+    bg = img
     # 雾：越靠近光越被光吞没
     fog = np.clip(1 - r / 0.75, 0, 1) ** 1.4
-    fog = np.clip(fog * (1.25 + 0.4 * flare), 0, 1)[..., None]
+    fog = np.clip(fog * (1.25 + 0.4 * flare) * k, 0, 1)[..., None]
     stone = np.array([12, 10, 18.0]) / 255
     sc = stone * (1 - fog) + bg * fog
     img = img * (1 - stairs[..., None]) + sc * stairs[..., None]
     gold = np.array([255, 200, 120.0]) / 255
-    eg = edges * (0.25 + 0.9 * np.clip(1 - r / 1.0, 0, 1) ** 1.2)
-    img = img + gold * eg[..., None] * 0.9
+    eg = edges * ((0.25 + 0.9 * np.clip(1 - r / 1.0, 0, 1) ** 1.2) * k + 0.12 * (1 - k) + 0.6 * flash)
+    ecol = gold * k + np.array([0.6, 0.68, 0.85]) * (1 - k)
+    img = img + ecol * eg[..., None] * 0.9
     # 人物：轮廓光（朝光一侧亮边）
     dirv = (LIGHT - ANCHOR) / np.linalg.norm(LIGHT - ANCHOR)
     sx, sy = int(round(-dirv[0] * 3)), int(round(-dirv[1] * 3))
@@ -234,7 +318,8 @@ def render(t):
     rim = np.clip(fig - shifted, 0, 1)
     body = np.array([5, 4, 9.0]) / 255
     img = img * (1 - fig[..., None]) + body * fig[..., None]
-    img = img + np.array([255, 225, 170.0]) / 255 * rim[..., None] * (0.9 + 0.5 * flare)
+    rcol = np.array([255, 225, 170.0]) / 255 * k * (0.9 + 0.5 * flare) + np.array([0.75, 0.82, 1.0]) * (0.15 * (1 - k) + 1.2 * flash)
+    img = img + rcol * rim[..., None]
     # 尘埃粒子（向光飘）
     pr = np.random.default_rng(42)
     n = 160
@@ -248,14 +333,17 @@ def render(t):
         rr = 0.8 + 2.2 * s
         dp.ellipse([x - rr, y - rr, x + rr, y + rr], fill=int(120 + 135 * s))
     part = np.asarray(part.filter(ImageFilter.GaussianBlur(1.2)), np.float64) / 255
-    img = img + gold * part[..., None] * 0.6
+    img = img + gold * part[..., None] * 0.6 * k
+    rm = rain_mask(t, rain, flash)
+    if rm is not None:
+        img = img + np.array([0.62, 0.68, 0.8]) * rm[..., None] * (0.35 + 0.5 * flash)
     # 泛光
     bright = np.clip(img - 0.7, 0, None)
     bl = Image.fromarray((np.clip(bright, 0, 1) * 255).astype(np.uint8)).resize((W // 4, H // 4), Image.BILINEAR)
     bl = bl.filter(ImageFilter.GaussianBlur(18)).resize((W, H), Image.BILINEAR)
     img = img + np.asarray(bl, np.float64) / 255 * 1.2
     # 收尾神光爆发
-    img = img + (np.array([1.0, 0.95, 0.85]) - img) * 0.32 * ease((t - 2.5) / 0.5) 
+    img = img + (np.array([1.0, 0.95, 0.85]) - img) * 0.3 * ease((t - 4.5) / 0.5) 
     # 暗角 + 颗粒
     vig = 1 - 0.55 * np.clip(np.sqrt(((XX - W * 0.6) / W) ** 2 + ((YY - H * 0.45) / H) ** 2) - 0.25, 0, 1)
     img = img * vig[..., None]

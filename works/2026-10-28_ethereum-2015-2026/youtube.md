@@ -1,6 +1,6 @@
 # YouTube upload sheet — Ethereum
 
-- File: 1920×1080, 30 fps, 3:09 long, sound effects only (no music, no voice-over)
+- File: 1920×1080, 30 fps, 3:09 long, original score + sound effects (no voice-over), −14 LUFS
 - Data: 2015-08-08 → 2026-10-27, $1.20 → $2,350.36
 - Thumbnail: `cover.jpg` (1280×720)
 
@@ -26,6 +26,8 @@ Chapters
 Data: Coin Metrics ETH/USD to 2026-05-23, then Binance ETH/USDT · daily closes (UTC).
 Prices are daily closes in UTC; intraday highs and lows were higher or lower.
 This video is a historical review only and is not financial advice.
+
+Music: original score made for this video. Instrument samples: FluidR3_GM SoundFont (CC BY 3.0), via github.com/gleitz/midi-js-soundfonts.
 
 #Ethereum #ETH #Crypto
 

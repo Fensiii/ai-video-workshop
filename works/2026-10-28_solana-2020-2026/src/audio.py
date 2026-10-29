@@ -12,6 +12,12 @@ SR = 48000
 DUR = B.NFRAMES / B.FPS
 N = int(DUR * SR) + SR
 RNG = np.random.default_rng(1234)
+KEY_PC = {'eth': 2, 'sol': 4}[B.ASSET]   # tonic of the score (D minor / E minor): bells stay in key
+
+
+def kf(semi, octave):
+    """frequency of the note `semi` semitones above the tonic in the given octave"""
+    return 440.0 * 2 ** ((12 * (octave + 1) + KEY_PC + semi - 69) / 12)
 
 L = np.zeros(N)
 R = np.zeros(N)
@@ -190,7 +196,7 @@ def rumble(dur=3.0):
     return norm(x * e)
 
 # ----------------------------------------------------------------------------
-# bed: drone + air, modulated by market mood
+# bed: air + a low rumble in sell-offs (the score carries the harmony)
 # ----------------------------------------------------------------------------
 
 def build_bed():
@@ -198,46 +204,40 @@ def build_bed():
     t = np.arange(n) / SR
     fr = np.arange(B.NFRAMES) / B.FPS
     cam = B.get_camera()
-    upm = np.interp(t, fr, cam['up'])
     dnm = np.interp(t, fr, cam['down'])
     # global level envelope
     g = np.clip(t / 1.2, 0, 1) * np.clip((DUR + 0.2 - t) / 2.5, 0, 1)
-    lfo = 0.75 + 0.25 * np.sin(2 * np.pi * t / 11.0)
-    drone = (np.sin(2 * np.pi * 55 * t) * 0.6 + np.sin(2 * np.pi * 82.41 * t + 1) * 0.35 +
-             np.sin(2 * np.pi * 110.3 * t + 2) * 0.18) * lfo
     air = lp(RNG.standard_normal(n), 520, 2)
     air = air / (np.std(air) + 1e-9)
-    shimmer = bp(RNG.standard_normal(n), 3500, 7500, 2)
-    shimmer = shimmer / (np.std(shimmer) + 1e-9) * (0.5 + 0.5 * np.sin(2 * np.pi * t / 7.3) ** 2)
     rum = lp(RNG.standard_normal(n), 70, 4)
     rum = rum / (np.std(rum) + 1e-9)
-    bed = (0.045 * drone + 0.030 * air + 0.010 * shimmer * (0.4 + 1.6 * upm) + 0.06 * rum * dnm) * g
+    bed = (0.022 * air + 0.04 * rum * dnm) * g
     # stereo decorrelation for the air
     air2 = lp(RNG.standard_normal(n), 520, 2)
     air2 = air2 / (np.std(air2) + 1e-9)
-    bed_r = bed + 0.018 * (air2 - air) * g
+    bed_r = bed + 0.012 * (air2 - air) * g
     return bed, bed_r
 
 
 def main():
     # ---------------- intro
-    add(bell(523.25, 3.5, 1.3), 0.0, 0.16, -0.1, 0.6)
-    add(bell(783.99, 3.5, 1.2), 0.04, 0.12, 0.15, 0.6)
-    add(bell(1046.5, 3.0, 1.0), 0.09, 0.08, 0.3, 0.6)
+    add(bell(kf(0, 5), 3.5, 1.3), 0.0, 0.16, -0.1, 0.6)
+    add(bell(kf(7, 5), 3.5, 1.2), 0.04, 0.12, 0.15, 0.6)
+    add(bell(kf(0, 6), 3.0, 1.0), 0.09, 0.08, 0.3, 0.6)
     add(whoosh(1.4, 200, 2500, peak=0.25), 0.0, 0.10, 0.0, 0.5)
     add(sparkle(1.6, 14, seed=1), 0.05, 0.07, 0.2, 0.5)
     add(whoosh(0.9, 600, 5000, peak=0.5), 0.2, 0.06, 0.0, 0.4)
     for tg in (0.75, 1.85):
-        add(bell(4186, 0.8, 0.25, ((1, 1), (2.4, 0.3))), tg, 0.05, 0.45, 0.6)
+        add(bell(kf(0, 7), 0.8, 0.25, ((1, 1), (2.4, 0.3))), tg, 0.05, 0.45, 0.6)
     add(whoosh(1.0, 3000, 300, peak=0.3), 2.25, 0.10, 0.0, 0.4)
-    add(bell(2637, 1.5, 0.5, ((1, 1), (2.0, 0.3), (3.0, 0.1))), 2.45, 0.08, -0.7, 0.6)
+    add(bell(kf(7, 6), 1.5, 0.5, ((1, 1), (2.0, 0.3), (3.0, 0.1))), 2.45, 0.08, -0.7, 0.6)
     add(riser(1.25, 250, 3200), 3.3, 0.12, 0.0, 0.3)
     add(sparkle(1.4, 26, 4000, 10000, seed=2), 3.4, 0.08, 0.3, 0.5)
-    add(bell(1567.98, 2.0, 0.8), 4.55, 0.10, 0.6, 0.6)
+    add(bell(kf(3, 6), 2.0, 0.8), 4.55, 0.10, 0.6, 0.6)
     add(whoosh(0.7, 3500, 250, peak=0.25), 5.0, 0.10, 0.2, 0.4)
     add(whoosh(0.9, 400, 3000, peak=0.6), 5.5, 0.08, -0.4, 0.4)
-    add(bell(659.25, 2.8, 1.1), 6.35, 0.10, 0.2, 0.7)
-    add(bell(987.77, 2.4, 0.9), 6.37, 0.06, 0.25, 0.7)
+    add(bell(kf(0, 5), 2.8, 1.1), 6.35, 0.10, 0.2, 0.7)
+    add(bell(kf(7, 5), 2.4, 0.9), 6.37, 0.06, 0.25, 0.7)
     for k, f in enumerate((1760, 2093, 2637, 3136)):
         add(click(f, 0.04, 0.2), 7.3 + 0.07 * k, 0.05, -0.6 + 0.4 * k, 0.2)
     add(riser(0.9, 150, 1800), 7.6, 0.08, 0.0, 0.3)
@@ -252,10 +252,10 @@ def main():
             continue
         d = B.date_of(B.HEAD[fi])
         if prev_y is not None and d.year != prev_y:
-            add(click(1500, 0.05, 0.6), t, 0.07, -0.55, 0.15)
-            add(click(750, 0.06, 0.2), t, 0.05, -0.55, 0.15)
+            add(click(1500, 0.05, 0.6), t, 0.045, -0.55, 0.15)
+            add(click(750, 0.06, 0.2), t, 0.03, -0.55, 0.15)
         elif prev_m is not None and d.month != prev_m and t - last_tick > 0.09:
-            add(click(3200 + 300 * (d.month % 3), 0.02, 0.5), t, 0.022, 0.55, 0.08)
+            add(click(3200 + 300 * (d.month % 3), 0.02, 0.5), t, 0.010, 0.55, 0.08)
             last_tick = t
         prev_m, prev_y = d.month, d.year
 
@@ -267,7 +267,7 @@ def main():
         te = ev.t
         if ev.kind in ('genesis', 'peak', 'high'):
             add(boom(2.4, 90, 40, 0.6), te, 0.30, 0.2, 0.3)
-            for f, g in ((659.25, 0.12), (987.77, 0.09), (1318.5, 0.07), (1975.5, 0.05)):
+            for f, g in ((kf(0, 5), 0.12), (kf(7, 5), 0.09), (kf(0, 6), 0.07), (kf(7, 6), 0.05)):
                 add(bell(f, 3.2, 1.2), te, g, 0.3, 0.7)
             add(sparkle(1.8, 30, 3500, 10000, seed=100 + i), te, 0.10, 0.4, 0.6)
         elif ev.kind == 'rally':
@@ -278,16 +278,16 @@ def main():
             add(whoosh(0.55, 4000, 400, peak=0.85), te - 0.5, 0.07, 0.2, 0.2)
             add(boom(3.2, 75, 30, 1.0), te, 0.40, 0.15, 0.35)
             add(rumble(3.5), te, 0.20, 0.0, 0.2)
-            add(bell(196.0, 3.0, 1.2, ((1, 1), (2.01, 0.3), (2.98, 0.15))), te, 0.06, 0.2, 0.6)
+            add(bell(kf(0, 3), 3.0, 1.2, ((1, 1), (2.01, 0.3), (2.98, 0.15))), te, 0.06, 0.2, 0.6)
         elif ev.kind == 'bottom':
             add(boom(2.6, 70, 32, 0.8), te, 0.30, 0.1, 0.35)
-            add(bell(261.63, 3.2, 1.4, ((1, 1), (2.0, 0.25))), te, 0.07, 0.2, 0.7)
+            add(bell(kf(0, 4), 3.2, 1.4, ((1, 1), (2.0, 0.25))), te, 0.07, 0.2, 0.7)
         elif ev.kind == 'tech':
             add(glitch(0.55, 110), te, 0.07, 0.3, 0.3)
-            add(ping(880, 1320, 1.2), te + 0.02, 0.07, 0.3, 0.6)
+            add(ping(kf(7, 5), kf(2, 6), 1.2), te + 0.02, 0.07, 0.3, 0.6)
             add(boom(1.4, 140, 60, 0.3), te, 0.12, 0.2, 0.2)
         else:  # blue: adoption, ETFs, policy, funding
-            add(ping(1174.66, 1760, 1.2), te, 0.09, 0.35, 0.6)
+            add(ping(kf(0, 6), kf(7, 6), 1.2), te, 0.09, 0.35, 0.6)
             add(boom(1.2, 130, 60, 0.25), te, 0.12, 0.2, 0.2)
             add(sparkle(0.9, 8, 3000, 7000, seed=300 + i), te, 0.05, 0.4, 0.5)
 
@@ -310,7 +310,7 @@ def main():
         add(riser(0.9, 300, 4000), tm - 0.9, 0.09, -0.2, 0.2)
         add(whoosh(0.85, 180, 1400, peak=0.7, q=1.1), tm - 0.6, 0.08, -0.2, 0.3)
         add(boom(2.0, 110, 50, 0.45), tm, 0.22, -0.1, 0.3)
-        for f, g in ((783.99, 0.10), (1174.66, 0.08), (1567.98, 0.07), (2349.3, 0.05)):
+        for f, g in ((kf(3, 5), 0.10), (kf(10, 5), 0.08), (kf(3, 6), 0.07), (kf(10, 6), 0.05)):
             add(bell(f, 3.0, 1.1), tm, g, -0.2, 0.7)
         add(sparkle(2.0, 36, 4000, 11000, seed=500 + k), tm, 0.11, -0.2, 0.6)
 
@@ -321,7 +321,7 @@ def main():
 
     # ---------------- ending
     T = B.T_END
-    add(bell(392.0, 3.0, 1.2, ((1, 1), (2.0, 0.25))), T, 0.06, 0.0, 0.7)
+    add(bell(kf(7, 4), 3.0, 1.2, ((1, 1), (2.0, 0.25))), T, 0.06, 0.0, 0.7)
     for tq in (T + 1.0, T + 2.0):
         add(boom(3.0, 70, 30, 1.1), tq, 0.32, 0.4, 0.5)
         add(whoosh(0.6, 2500, 300, peak=0.2), tq - 0.05, 0.06, 0.4, 0.4)
@@ -333,11 +333,11 @@ def main():
     add(click(1800, 0.05, 0.3), T + 9.4, 0.05, -0.6, 0.4)
     add(click(1400, 0.05, 0.3), T + 9.9, 0.05, -0.6, 0.4)
     add(boom(4.0, 85, 30, 1.4), T + 10.5, 0.42, -0.3, 0.5)
-    for f, g in ((523.25, 0.12), (783.99, 0.10), (1046.5, 0.08), (1567.98, 0.06), (2093.0, 0.04)):
+    for f, g in ((kf(8, 5), 0.12), (kf(0, 6), 0.10), (kf(3, 6), 0.08), (kf(8, 6), 0.06), (kf(0, 7), 0.04)):
         add(bell(f, 4.5, 1.8), T + 10.5, g, -0.3, 0.8)
     add(sparkle(2.5, 40, 4000, 11000, seed=900), T + 10.5, 0.10, -0.3, 0.7)
     add(boom(4.0, 65, 28, 1.6), T + 11.6, 0.30, 0.3, 0.6)
-    for f, g in ((392.0, 0.10), (587.33, 0.08), (783.99, 0.07), (1174.66, 0.05)):
+    for f, g in ((kf(3, 4), 0.10), (kf(8, 4), 0.08), (kf(0, 5), 0.07), (kf(3, 5), 0.05)):
         add(bell(f, 4.0, 2.0), T + 11.6, g, 0.3, 0.8)
     add(whoosh(1.5, 200, 2000, peak=0.4), T + 12.5, 0.04, 0.0, 0.5)
 

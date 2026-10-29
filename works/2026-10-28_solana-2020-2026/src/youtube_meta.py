@@ -49,7 +49,7 @@ def main():
     lines = [
         f'# YouTube upload sheet — {B.CFG.NAME}',
         '',
-        f'- File: 1920×1080, {B.FPS} fps, {ts(B.DURATION)} long, sound effects only (no music, no voice-over)',
+        f'- File: 1920×1080, {B.FPS} fps, {ts(B.DURATION)} long, original score + sound effects (no voice-over), −14 LUFS',
         f'- Data: {B.DATES[0]} → {B.DATES[-1]}, ${p0:,.2f} → ${p1:,.2f}',
         '- Thumbnail: `cover.jpg` (1280×720)',
         '',
@@ -69,6 +69,9 @@ def main():
         f'{src}.',
         'Prices are daily closes in UTC; intraday highs and lows were higher or lower.',
         'This video is a historical review only and is not financial advice.',
+        '',
+        'Music: original score made for this video. Instrument samples: FluidR3_GM SoundFont '
+        '(CC BY 3.0), via github.com/gleitz/midi-js-soundfonts.',
         '',
         m['hashtags'],
         '',

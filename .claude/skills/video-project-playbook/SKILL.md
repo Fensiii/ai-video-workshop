@@ -15,7 +15,7 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
 | 特斯拉，凭什么？（无配音） | `tesla-evolution-explainer` / `tesla-success/` | 2分38秒、字幕 + 合成配乐 | Canvas/DOM + Playwright + numpy 配乐 |
 | 歌曲混剪 MV | `works/2026-10-17_song-mv-duanfa/`（原分支 `claude/song-music-video`） | 16:9 混剪 + 卡拉 OK 式歌词 | ffmpeg + ASS/LRC 字幕 |
 | 比特币 2010–2026 | `works/2026-10-17_bitcoin-2010-2026/`（成片 + `src/`） | 3分14秒复刻、只要音效 | skia-python + numpy 音效 |
-| 以太坊 2015–2026、Solana 2020–2026（英文，发 YouTube） | `works/2026-10-28_ethereum-2015-2026/`、`works/2026-10-28_solana-2020-2026/`（共用 `src/`，`ASSET=eth/sol`） | 3分09秒 / 2分30秒、英文、绿涨红跌、只要音效，附封面和上传文案 | 比特币那套改成多资产配置 |
+| 以太坊 2015–2026、Solana 2020–2026（英文，发 YouTube） | `works/2026-10-28_ethereum-2015-2026/`、`works/2026-10-28_solana-2020-2026/`（共用 `src/`，`ASSET=eth/sol`） | 3分09秒 / 2分30秒、英文、绿涨红跌、原创配乐 + 音效，附封面和上传文案 | 比特币那套改成多资产配置 + 采样配乐 |
 | 视频 skills 库 | `claude/add-video-toolkit-skills` / `.claude/` | 130 个 skills（Remotion、HyperFrames、配音、自媒体等） | 见该分支 `CLAUDE.md` |
 
 比特币这类“资产历史走势复刻”有单独的详细 skill：`data-history-video`。
@@ -120,6 +120,8 @@ description: 本仓库历次视频项目的经验总结与可复用代码索引�
   整数关口改成时间锚点；结尾全景图按全史最高/最低自动适配，不和总结文字重叠。
 - 交付包：成片（两遍编码 ≤95MB）、1280×720 封面 `cover.jpg`、`youtube.md`（标题、带章节的简介、标签）。
 - 音频按 YouTube 的 −14 LUFS。
+- 用户随后要求“加个合适的音乐”：做了**原创配乐**（FluidR3 采样 + 合成鼓/贝斯，120 BPM 让事件卡拍，
+  随行情编排），不用现成曲子以免 YouTube 版权认领；做法和验证方法见 `data-history-video` 第 5b 节。
 
 ## 五、用户偏好（已确认过的）
 

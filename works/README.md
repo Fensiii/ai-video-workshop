@@ -7,7 +7,7 @@
 |---|---|---|---|---|
 | `2026-10-17_bitcoin-2010-2026/` | `bitcoin_2010-2026_16x9.mp4` | 3:14 | 1920×1080 30fps | 比特币 2010–2026 走势，一比一复刻 `references/data-history/nasdaq-55y.mp4`；只有合成音效；含镜头晃动、推近和图上标注。生成脚本在 `src/`，经验见 skill `data-history-video` |
 | `2026-10-17_song-mv-duanfa/` | `duanfa-girl-mv_16x9.mp4` | 1:10 | 1920×1080 | 《幻昼》×《短发女孩》×《take me hand》混剪，带歌词字幕；`lyrics.ass` / `lyrics.lrc` 为歌词时间轴 |
-| `2026-10-28_nvidia-1999-2026/` | `nvidia_1999-2026_16x9.mp4` | 3:33 | 1920×1080 30fps | 英伟达 1999–2026 股价走势英文版（发 YouTube），沿用比特币版的版式和特效；全英文画面、绿涨红跌、市值 $1T–$5T 里程碑；只有合成音效（−14 LUFS）。附 YouTube 封面 `thumbnail.jpg`、标题/简介/章节 `youtube.md`，数据在 `data/`，脚本在 `src/` |
+| `2026-10-28_nvidia-1999-2026/` | `nvidia_1999-2026_16x9.mp4` | 3:33 | 1920×1080 30fps | 英伟达 1999–2026 股价走势英文版（发 YouTube），沿用比特币版的版式和特效；全英文画面、绿涨红跌、市值 $1T–$5T 里程碑；原创合成配乐 + 音效（−14 LUFS，无版权素材）。附 YouTube 封面 `thumbnail.jpg`、标题/简介/章节 `youtube.md`，数据在 `data/`，脚本在 `src/` |
 
 ## 不在库里的旧作品
 

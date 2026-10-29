@@ -1,6 +1,6 @@
 # YouTube upload kit — NVIDIA 1999–2026
 
-Video: `nvidia_1999-2026_16x9.mp4` (3:33, 1920×1080, 30 fps, sound effects only — no music, no voice)
+Video: `nvidia_1999-2026_16x9.mp4` (3:33, 1920×1080, 30 fps, original synthesised score + sound effects, no voice)
 Thumbnail: `thumbnail.jpg` (1280×720)
 
 ## Title (pick one)
@@ -38,6 +38,7 @@ Biggest moments
 • First company worth $4 trillion, then $5 trillion (2025)
 
 Data: NVDA daily closing prices from Yahoo Finance, adjusted for six stock splits (480:1 in total), dividends excluded. Jan 22, 1999 – Oct 27, 2026.
+Music: original score, composed and synthesised for this video.
 This video is a historical review for educational purposes only. It is not investment advice.
 
 #NVIDIA #NVDA #Stocks
@@ -52,4 +53,4 @@ NVIDIA, NVDA, NVIDIA stock, NVIDIA stock history, NVIDIA stock price, stock mark
 - Category: Education (or News & Politics / Science & Technology)
 - Altered or synthetic content: No (real price data, animated chart)
 - Made for kids: No
-- Audio is fully synthesised in code, so there is no music Content ID risk.
+- Music and sound effects are synthesised in code (no samples, no library tracks), so there is no Content ID risk.

@@ -4,7 +4,7 @@
 
 | 文件 | 说明 |
 |---|---|
-| `nvidia_1999-2026_16x9.mp4` | 成片，3:33，1920×1080 30fps，只有合成音效（−14 LUFS） |
+| `nvidia_1999-2026_16x9.mp4` | 成片，3:33，1920×1080 30fps，原创合成配乐 + 音效（−14 LUFS），无版权素材 |
 | `thumbnail.jpg` | YouTube 封面 1280×720 |
 | `youtube.md` | YouTube 标题备选、简介（含章节时间戳）、标签 |
 | `thumbs.jpg` | 全片均匀 12 帧拼图 |
@@ -32,9 +32,20 @@ python3 merge_data.py OLD.csv NEW.csv   # -> ../data/nvda_daily.csv
 python3 render.py 17.4 40 152.9         # 单帧预览 -> ../work/test_frames/
 python3 run_render.py 16                # 全片，4 核约 25 分钟 -> ../out/video_noaudio.mp4
 python3 audio.py                        # 合成音效 -> ../out/sfx.wav
-python3 finalize.py                     # 响度 + 两遍编码 + thumbs.jpg
+python3 music.py                        # 原创配乐 -> ../out/music.wav
+python3 finalize.py                     # 混音（配乐遇重击自动压低）+ 响度 + 两遍编码 + thumbs.jpg
+python3 finalize.py --audio             # 只改了声音时：重混并替换成片音轨，画面不重编
 python3 thumbnail.py                    # YouTube 封面
 ```
 
 改文案、事件、时间只动 `src/nvda_common.py` 里的 `EVENTS_RAW` / `ERAS` / `MILESTONES_RAW`，
 涨跌幅、价格、倍数都由数据自动计算。
+
+## 配乐
+
+`src/music.py` 用 numpy 合成，不用任何采样或现成音乐，YouTube 不会触发版权认领。
+- 120 BPM，第一拍在 0.5 秒：事件时刻都在 0.5 秒网格上，所以每个事件都落在拍子上。
+- D 小调，和弦按年代走（Dm–Bb–F–C 主进行，崩盘段 Dm–Bb–Gm–A，AI 段 F–C–Dm–Bb 并加主旋律）；
+  能量随剧情和行情冷暖变化，暴跌日乐队停一小节。
+- 音效里的铃声音高同步改到 D 小调，原来的低鸣 drone 关掉，由配乐垫底。
+- 混音时配乐比音效低约 2 dB，音效重击时配乐再自动压低最多 6 dB。
